@@ -33,6 +33,9 @@ SPINBOX_WIDGET = "spinbox"
 
 
 class Property(object):
+    """
+    The base node property class.
+    """
     def __init__(self, idname, default, label, visible=True):
         self.idname = idname
         self.value = default
@@ -104,12 +107,13 @@ class Property(object):
 class PositiveIntegerProp(Property):
     """ Allows the user to select a positive integer. """
 
-    def __init__(self, idname, default=0, min_val=0,
+    def __init__(self, idname, default=0, lbl_suffix="", min_val=0,
                  max_val=10, widget="slider", label="", visible=True):
         Property.__init__(self, idname, default, label, visible)
         self.min_value = min_val
         self.max_value = max_val
         self.widget = widget
+        self.lbl_suffix = lbl_suffix
 
         self._RunErrorCheck()
 
@@ -138,7 +142,7 @@ class PositiveIntegerProp(Property):
                                        label=self.GetLabel(),
                                        min_value=self.GetMinValue(),
                                        max_value=self.GetMaxValue(),
-                                       suffix="px", show_p=False,
+                                       suffix=self.lbl_suffix, show_p=False,
                                        size=(-1, 32))
 
         self.AddToFoldPanel(sizer, fold_panel, self.numberfield, spacing=10)
@@ -183,7 +187,6 @@ class ChoiceProp(Property):
         if not value:
             print("Value is null!")
         self.SetValue(value)
-
 
 
 class OpenFileChooserProp(Property):
@@ -233,7 +236,7 @@ class OpenFileChooserProp(Property):
         hbox.Add(self.button, flag=wx.LEFT, border=5)
         self.button.Bind(EVT_BUTTON, self.WidgetEvent)
 
-        vbox.Add(hbox, flag=wx.EXPAND | wx.BOTH | wx.ALL, border=6)
+        vbox.Add(hbox, flag=wx.EXPAND | wx.BOTH)
 
         vbox.Fit(pnl)
         pnl.SetSizer(vbox)

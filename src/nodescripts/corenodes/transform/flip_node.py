@@ -14,41 +14,54 @@
 # limitations under the License.
 # ----------------------------------------------------------------------------
 
+import numpy as np
+
 from gimelstudio import api
 
 
-class OutputNode(api.Node):
+class FlipNode(api.Node):
     def __init__(self, nodegraph, _id):
         api.Node.__init__(self, nodegraph, _id)
-
-        self._label = "Output"
-        self._isoutput = True
-        self._category = "OUTPUT"
-
-    def IsOutputNode(self):
-        return True
 
     @property
     def NodeMeta(self):
         meta_info = {
-            "label": "Output",
-            "author": "Correct Syntax",
-            "version": (0, 1, 3),
-            "supported_app_version": (0, 5, 0),
-            "category": "OUTPUT",
-            "description": """The most important node of them all. :)
-        This is registered here for the UI -the evaluation is handled elsewhere.
-        This node should not be accessed by outside users.
-        """
+            "label": "Flip",
+            "author": "Gimel Studio",
+            "version": (0, 5, 0),
+            "category": "TRANSFORM",
+            "description": "",
         }
         return meta_info
 
+    def NodeInitProps(self):
+        self.direction = api.ChoiceProp(
+            idname="Direction",
+            default="Vertically",
+            choices=["Vertically", "Horizontally"],
+            label="Filter Type:"
+        )
+        self.NodeAddProp(self.direction)
+
     def NodeInitParams(self):
-        p = api.RenderImageParam('Image')
-        self.NodeAddParam(p)
+        image = api.RenderImageParam('Image')
+
+        self.NodeAddParam(image)
 
     def NodeEvaluation(self, eval_info):
-        pass
+        flip_direction = self.EvalProperty(eval_info, 'Direction')
+        image1 = self.EvalParameter(eval_info, 'Image')
+
+        image = api.RenderImage()
+        img = image1.Image("numpy")
+
+        if flip_direction == "Vertically":
+            output_img = np.flipud(img)
+        elif flip_direction == "Horizontally":
+            output_img = np.fliplr(img)
+
+        image.SetAsImage(output_img)
+        return image
 
 
-api.RegisterNode(OutputNode, "corenode_outputcomposite")
+api.RegisterNode(FlipNode, "corenode_flip")

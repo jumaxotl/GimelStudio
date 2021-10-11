@@ -18,12 +18,9 @@ import os
 import sys
 
 
+# Application
 APP_FROZEN = getattr(sys, "frozen", False)
-
-if APP_FROZEN:
-    APP_DIR = os.path.dirname(os.path.abspath(sys.argv[0]))
-else:
-    APP_DIR = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "..")
+APP_DIR = os.path.dirname(os.path.abspath(sys.argv[0]))
 
 APP_NAME = "Gimel Studio"
 APP_WEBSITE_URL = "https://gimelstudio.github.io"
@@ -33,20 +30,9 @@ APP_VERSION = "0.6.0"
 APP_VERSION_TAG = "alpha1"
 APP_VERSION_FULL = "{0} {1}".format(APP_VERSION, APP_VERSION_TAG)
 
-APP_CORE_DEVELOPERS = [""]
-APP_CONTRIBUTORS = [""]
-APP_TRANSLATORS = [""]
+APP_CREDITS = [""]
 
-SUPPORTED_FT_OPEN_LIST = [
-    ".jpg",
-    ".jpeg",
-    ".png",
-    ".gif",
-    ".bmp",
-    ".exr",
-    ".webp",
-    ".tiff"
-]
+# File system
 SUPPORTED_FT_OPEN_LIST = [
     ".jpg",
     ".jpeg",
@@ -88,3 +74,7 @@ SUPPORTED_FT_SAVE_WILDCARD = \
     "WEBP file (*.webp)|*.webp|" \
     "TIFF file (*.tiff)|*.tiff|" \
     "All files (*.*)|*.*"
+
+# Colors
+AREA_BG_COLOR = "#464646"
+AREA_TOPBAR_COLOR = "#424242"

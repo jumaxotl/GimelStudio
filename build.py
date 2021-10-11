@@ -20,6 +20,10 @@ import shutil
 import subprocess
 
 
+# Set to True during development and testing
+DEBUG = True
+
+
 def MAC():
     # Executes a console instruction, it can activate an specific environment
     def ExecuteTerminalInstruction(inst, env='source env/bin/activate && '):
@@ -111,12 +115,17 @@ if sys.platform == "win32":
 # Setup the correct arguments and options based on the platform
 args = [
     "pyinstaller",
+    "src/main.py",
     "-n", "GimelStudio",
-    "--noconsole",
     "--noconfirm",
     "--hidden-import",
-    "pkg_resources.py2_warn"
+    "pkg_resources.py2_warn",
+    "--hidden-import",
+    "glcontext",
     ]
+
+if DEBUG is False:
+    args.append("--noconsole")
 
 if sys.platform == "linux" or sys.platform == "linux2":
     pass  # TODO
@@ -126,7 +135,6 @@ elif sys.platform == "win32":
 else:
     raise NotImplementedError("Only Windows, Linux and MacOs are supported!")
 
-args.append("src/main.py")
 subprocess.call(args)
 
 # Create a new folder for custom node scripts then copy the

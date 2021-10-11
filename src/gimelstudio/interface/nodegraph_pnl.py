@@ -16,13 +16,14 @@
 
 import wx
 import wx.lib.agw.flatmenu as flatmenu
-
 from gswidgetkit import Button, EVT_BUTTON, NumberField, EVT_NUMBERFIELD_CHANGE
-from gsnodegraph import (NodeGraph, EVT_GSNODEGRAPH_NODESELECT,
+from gsnodegraph import (EVT_GSNODEGRAPH_NODESELECT,
                          EVT_GSNODEGRAPH_NODECONNECT,
                          EVT_GSNODEGRAPH_NODEDISCONNECT,
                          EVT_GSNODEGRAPH_MOUSEZOOM)
+from gsnodegraph import NodeGraph as NodeGraphBase
 
+import gimelstudio.constants as const
 from gimelstudio.datafiles import (ICON_NODEGRAPH_PANEL, ICON_MORE_MENU_SMALL,
                                    ICON_MOUSE_LMB_MOVEMENT, ICON_MOUSE_LMB,
                                    ICON_KEY_CTRL, ICON_MOUSE_MMB_MOVEMENT,
@@ -35,6 +36,15 @@ ID_MENU_HIDEPANEL = wx.NewIdRef()
 ID_ADDNODEMENU = wx.NewIdRef()
 
 
+class NodeGraph(NodeGraphBase):
+    def __init__(self, parent, registry, *args, **kwds):
+        NodeGraphBase.__init__(self, parent, registry, *args, **kwds)
+
+    @property
+    def GLSLRenderer(self):
+        return self.parent.GLSLRenderer
+
+
 class NodeGraphPanel(wx.Panel):
     def __init__(self, parent, registry, id=wx.ID_ANY, pos=wx.DefaultPosition,
                  size=wx.DefaultSize, style=wx.NO_BORDER | wx.TAB_TRAVERSAL):
@@ -43,7 +53,7 @@ class NodeGraphPanel(wx.Panel):
         self.parent = parent
         self.registry = registry
 
-        self.SetBackgroundColour(wx.Colour("#464646"))
+        self.SetBackgroundColour(const.AREA_BG_COLOR)
 
         self.BuildUI()
 
@@ -51,7 +61,7 @@ class NodeGraphPanel(wx.Panel):
         main_sizer = wx.BoxSizer(wx.VERTICAL)
 
         topbar = wx.Panel(self)
-        topbar.SetBackgroundColour("#424242")
+        topbar.SetBackgroundColour(const.AREA_TOPBAR_COLOR)
 
         topbar_sizer = wx.GridBagSizer(vgap=1, hgap=1)
 
@@ -80,9 +90,10 @@ class NodeGraphPanel(wx.Panel):
         self.nodegraph.AddNode('corenode_image', wx.Point(100, 30))
         self.nodegraph.AddNode('corenode_image', wx.Point(100, 200))
         self.nodegraph.AddNode('corenode_blur', wx.Point(600, 200))
-        self.nodegraph.AddNode('corenode_mix', wx.Point(300, 200))
+        self.nodegraph.AddNode('corenode_opacity', wx.Point(300, 200))
         self.nodegraph.AddNode('corenode_outputcomposite', wx.Point(900, 270))
         self.nodegraph.AddNode('corenode_flip', wx.Point(500, 300))
+        self.nodegraph.AddNode('corenode_alpha_over', wx.Point(300, 350))
 
         main_sizer.Add(topbar, flag=wx.EXPAND | wx.LEFT | wx.RIGHT)
         main_sizer.Add(self.nodegraph, 1, flag=wx.EXPAND | wx.BOTH)
@@ -102,8 +113,7 @@ class NodeGraphPanel(wx.Panel):
 
         # Keyboard shortcut bindings
         self.accel_tbl = wx.AcceleratorTable([(wx.ACCEL_SHIFT, ord('A'),
-                                               ID_ADDNODEMENU),
-                                              ])
+                                               ID_ADDNODEMENU)])
         self.parent.SetAcceleratorTable(self.accel_tbl)
 
     @property
@@ -117,6 +127,10 @@ class NodeGraphPanel(wx.Panel):
     @property
     def PropertiesPanel(self):
         return self.parent.prop_pnl
+
+    @property
+    def GLSLRenderer(self):
+        return self.parent.glsl_renderer
 
     @property
     def Statusbar(self):
@@ -159,15 +173,16 @@ class NodeGraphPanel(wx.Panel):
                                         keyicon=ICON_KEY_CTRL,
                                         text=_("Connect Selected Node To Output"))
         self.Statusbar.PushContextHints(5, mouseicon=ICON_MOUSE_MMB_MOVEMENT,
-                                        text=_("Pan Nodegraph"))
+                                        text=_("Pan Node Graph"))
         self.Statusbar.PushContextHints(6, mouseicon=ICON_MOUSE_RMB,
                                         text=_("Node Context Menu"))
-        self.Statusbar.PushMessage(_("Nodegraph Area"))
+        self.Statusbar.PushMessage(_("Node Graph Area"))
         self.Statusbar.UpdateStatusBar()
 
     def OnAddNodeMenu(self, event):
         """ Event handler to bring up the Add Node menu. """
-        self.addnodemenu = AddNodeMenu(self, self.registry, size=wx.Size(250, self.Size[1] - 50))
+        self.addnodemenu = AddNodeMenu(self, self.registry,
+                                       size=wx.Size(250, self.Size[1] - 50))
         pos = wx.GetMousePosition()
         self.addnodemenu.Position((pos[0]-125, pos[1]-100), (2, 2))
         self.addnodemenu.SetSize(250, 400)

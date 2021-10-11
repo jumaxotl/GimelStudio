@@ -23,10 +23,10 @@ import wx.lib.agw.flatmenu as flatmenu
 
 from .node_importer import *
 import gimelstudio.constants as appconst
-from .config import AppConfiguration
 from .interface import artproviders
-from .core import Renderer, NODE_REGISTRY
 from .datafiles.icons import ICON_GIMELSTUDIO_ICO
+from .core import (Renderer, GLSLRenderer,
+                   NODE_REGISTRY)
 from .interface import (ImageViewportPanel, NodePropertiesPanel,
                         NodeGraphPanel, StatusBar, PreferencesDialog,
                         ExportImageHandler, NodeGraphDropTarget)
@@ -39,15 +39,15 @@ class AUIManager(aui.AuiManager):
 
 
 class ApplicationFrame(wx.Frame):
-    def __init__(self):
+    def __init__(self, app_config=None):
         wx.Frame.__init__(self, None, title=appconst.APP_NAME, size=(1000, 800))
 
         # Application configuration
-        self.appconfig = AppConfiguration(self)
-        self.appconfig.Load()
+        self.appconfig = app_config
 
-        # Renderer and node registry
+        # Initilize renderers and node registry
         self.renderer = Renderer(self)
+        self.glsl_renderer = GLSLRenderer()
         self.registry = NODE_REGISTRY
 
         # Set the program icon
@@ -72,6 +72,13 @@ class ApplicationFrame(wx.Frame):
         window_menu = flatmenu.FlatMenu()
         help_menu = flatmenu.FlatMenu()
 
+        # Separator
+        separator = flatmenu.FlatMenuItem(
+            file_menu,
+            id=wx.ID_SEPARATOR,
+            kind=wx.ITEM_SEPARATOR,
+        )
+
         # File
         self.newprojectfile_menuitem = flatmenu.FlatMenuItem(
             file_menu,
@@ -94,7 +101,7 @@ class ApplicationFrame(wx.Frame):
         self.saveprojectfile_menuitem = flatmenu.FlatMenuItem(
             file_menu,
             id=wx.ID_ANY,
-            label="{0}{1}".format(_("Save Project..."), "\tCtrl+S"),
+            label="{0}{1}".format(_("Save Project…"), "\tCtrl+S"),
             helpString=_("Save the current project file"),
             kind=wx.ITEM_NORMAL,
             subMenu=None
@@ -103,24 +110,20 @@ class ApplicationFrame(wx.Frame):
         self.saveprojectfileas_menuitem = flatmenu.FlatMenuItem(
             file_menu,
             id=wx.ID_ANY,
-            label="{0}{1}".format(_("Save Project As..."), "\tCtrl+Shift+S"),
+            label="{0}{1}".format(_("Save Project As…"), "\tCtrl+Shift+S"),
             helpString=_("Save the current project as a Gimel Studio project"),
             kind=wx.ITEM_NORMAL,
             subMenu=None
         )
 
-        self.menubar.AddSeparator()
-
         self.exportasimage_menuitem = flatmenu.FlatMenuItem(
             file_menu,
             id=wx.ID_ANY,
-            label="{0}{1}".format(_("Export Image As..."), "\tShift+E"),
+            label="{0}{1}".format(_("Export Image As…"), "\tShift+E"),
             helpString=_("Export rendered image to a file"),
             kind=wx.ITEM_NORMAL,
             subMenu=None
         )
-
-        self.menubar.AddSeparator()
 
         self.quit_menuitem = flatmenu.FlatMenuItem(
             file_menu,
@@ -144,8 +147,8 @@ class ApplicationFrame(wx.Frame):
         self.preferences_menuitem = flatmenu.FlatMenuItem(
             edit_menu,
             id=wx.ID_ANY,
-            label=_("User Preferences"),
-            helpString=_("Edit user preferences and settings for Gimel Studio"),
+            label=_("Preferences"),
+            helpString=_("Edit preferences for Gimel Studio"),
             kind=wx.ITEM_NORMAL,
             subMenu=None
         )
@@ -242,9 +245,11 @@ class ApplicationFrame(wx.Frame):
         # Append menu items to menus
         file_menu.AppendItem(self.newprojectfile_menuitem)
         file_menu.AppendItem(self.openprojectfile_menuitem)
+        file_menu.AppendItem(separator)
         file_menu.AppendItem(self.saveprojectfile_menuitem)
         file_menu.AppendItem(self.saveprojectfileas_menuitem)
         file_menu.AppendItem(self.exportasimage_menuitem)
+        file_menu.AppendItem(separator)
         file_menu.AppendItem(self.quit_menuitem)
 
         edit_menu.AppendItem(self.copytoclipboard_menuitem)
@@ -261,6 +266,7 @@ class ApplicationFrame(wx.Frame):
         help_menu.AppendItem(self.onlinemanual_menuitem)
         help_menu.AppendItem(self.visitwebsite_menuitem)
         help_menu.AppendItem(self.reportabug_menuitem)
+        help_menu.AppendItem(separator)
         help_menu.AppendItem(self.about_menuitem)
 
         # Append menus to the menubar
@@ -333,7 +339,7 @@ class ApplicationFrame(wx.Frame):
         self.imageviewport_pnl = ImageViewportPanel(self)
         self.prop_pnl = NodePropertiesPanel(self, size=(350, 500))
 
-        # Nodegraph
+        # Node Graph
         self.nodegraph_pnl = NodeGraphPanel(self, self.registry, size=(100, 100))
         self.nodegraph_pnl.SetDropTarget(NodeGraphDropTarget(self.nodegraph_pnl))
 
@@ -427,6 +433,8 @@ class ApplicationFrame(wx.Frame):
         if quitdialog.ShowModal() == wx.ID_YES:
             # Save configuration settings before quit
             self.appconfig.Save()
+            # Make sure to release data used by GPU render engine
+            self.glsl_renderer.Release()
             # Un-int the app and window mgr
             quitdialog.Destroy()
             self._mgr.UnInit()
@@ -436,7 +444,17 @@ class ApplicationFrame(wx.Frame):
             event.Skip()
 
     def OnPreferencesDialog(self, event):
-        dlg = PreferencesDialog(self, title=_("User Preferences & Settings"))
+        categories = [
+                "General",
+                "Interface",
+                "Add-ons",
+                "Nodes",
+                "Templates",
+                "System",
+                "File Paths"
+                ]
+        dlg = PreferencesDialog(self, title=_("Gimel Studio Preferences"),
+                                app_config=self.appconfig, categories=categories)
         dlg.Show()
 
     def OnToggleStatusbar(self, event):
@@ -457,7 +475,7 @@ class ApplicationFrame(wx.Frame):
         self.Maximize()
 
     def OnOnlineManual(self, event):
-        url = ("https://gimel-studio.readthedocs.io/en/latest/")
+        url = ("https://gimelstudio.readthedocs.io/en/latest/")
         webbrowser.open(url)
 
     def OnReportABug(self, event):
