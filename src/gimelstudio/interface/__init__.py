@@ -4,5 +4,9 @@ from .nodegraph_pnl import NodeGraphPanel
 from .statusbar import StatusBar
 from .preferences_dlg import PreferencesDialog
 from .exportimage_dlg import ExportImageHandler
+from .about_dlg import AboutDialog
 from .nodegraph_dnd import NodeGraphDropTarget
 from .addnode_menu import AddNodeMenu
+from .message_dlgs import ShowNotImplementedDialog
+from .panel_base import PanelBase
+from .startup_splash import StartupSplashScreen

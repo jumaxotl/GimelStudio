@@ -1,5 +1,5 @@
 # ----------------------------------------------------------------------------
-# Gimel Studio Copyright 2019-2021 by Noah Rahm and contributors
+# Gimel Studio Copyright 2019-2022 by Noah Rahm and contributors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ except ImportError:
 
 class RenderImage(object):
     def __init__(self, size=(20, 20)):
-        self._img = np.zeros((size[0], size[1], 4), dtype=np.uint16)
+        self.img = np.zeros((size[0], size[1], 4), dtype=np.float32)
 
     def Image(self, data_type="numpy"):
         """ Returns the image in the requested datatype format.
@@ -37,20 +37,21 @@ class RenderImage(object):
         :param data_type: the requested image datatype
         :returns: ``numpy.ndarray`` or ``oiio.ImageBuf`` object
         """
-        current_data_type = type(self._img)
+        current_data_type = type(self.img)
         if data_type == "numpy":
             if current_data_type == np.ndarray:
-                return self._img
+                return self.img
             else:
-                self._img = self._img.get_pixels(oiio.INT16)
-                return self._img
+                self.img = self.img.get_pixels("float")
+                return self.img
 
         elif data_type == "oiio":
-            if current_data_type == oiio.ImageBuf:
-                return self._img
-            else:
-                self._img = self.NumpyArrayToImageBuf()
-                return self._img
+            print("[WARNING] Converting to oiio is disabled!")
+            # if current_data_type == oiio.ImageBuf:
+            #     return self.img
+            # else:
+            #     self.img = self.NumpyArrayToImageBuf()
+            #     return self.img
 
         else:
             raise TypeError("Not a valid datatype!")
@@ -59,10 +60,13 @@ class RenderImage(object):
         """ Converts a np.ndarray to an OIIO ImageBuf image.
         :returns: ``oiio.ImageBuf`` object
         """
-        height, width = self._img.shape[:2]
-        spec = oiio.ImageSpec(width, height, 4, "uint16")
+        height = self.img.shape[1]
+        width = self.img.shape[0]
+        spec = oiio.ImageSpec(width, height, 4, "float")
         buf = oiio.ImageBuf(spec)
-        buf.set_pixels(oiio.ROI(), self._img)
+        buf.set_pixels(oiio.ROI(), self.img)
+        if buf.has_error:
+            print("Error in NumpyArrayToImageBuf:", buf.geterror())
         return buf
 
     def SetAsOpenedImage(self, path):
@@ -73,19 +77,23 @@ class RenderImage(object):
             # Open the image as an array
             img_input = oiio.ImageInput.open(path)
             if img_input is None:
-                print("IO ERROR: ", oiio.geterror())
-            image = img_input.read_image(format="uint16")
+                print("[IO ERROR] ", oiio.geterror())
+            image = img_input.read_image(format="float32")
+
+            # Check image size to warn about glsl texture max limit
+            if image.shape[0] > 6000 or image.shape[1] > 6000:
+                print("[WARNING] GLSL texture size is set for images less than 6000x6000px")
 
             # Enforce RGBA
             if image.shape[2] == 3:
-                self._img = cv2.cvtColor(image, cv2.COLOR_RGB2RGBA)
+                self.img = cv2.cvtColor(image, cv2.COLOR_RGB2RGBA)
             else:
-                self._img = image
-        except FileNotFoundError:
-            print("IO ERROR: COULD NOT OPEN IMAGE!")
+                self.img = image
+        except FileNotFoundError as error:
+            print("[IO ERROR] Could not open image! ", error)
 
     def SetAsImage(self, image):
         """ Sets the render image.
         :param image: ``numpy.ndarray`` or ``oiio.ImageBuf`` object
         """
-        self._img = image
+        self.img = image

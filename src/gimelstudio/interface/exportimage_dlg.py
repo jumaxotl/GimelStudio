@@ -1,5 +1,5 @@
 # ----------------------------------------------------------------------------
-# Gimel Studio Copyright 2019-2021 by Noah Rahm and contributors
+# Gimel Studio Copyright 2019-2022 by Noah Rahm and contributors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,9 +16,14 @@
 
 import os
 import wx
-import wx.stc as stc
+try:
+    import OpenImageIO as oiio
+except ImportError:
+    print("""OpenImageIO is required! Get the python wheel for Windows at:
+     https://www.lfd.uci.edu/~gohlke/pythonlibs/#openimageio""")
+
 from gswidgetkit import (Button, EVT_BUTTON, NumberField, EVT_NUMBERFIELD,
-                         TextCtrl, DropDown, EVT_DROPDOWN)
+                         Label, DropDown, EVT_DROPDOWN)
 
 import gimelstudio.constants as const
 
@@ -38,7 +43,7 @@ class ExportOptionsDialog(wx.Dialog):
 
         self.SetSize((400, 300))
         self.SetTitle("{} {}".format(self.filetype.upper(), self.title))
-        self.SetBackgroundColour(wx.Colour("#464646"))
+        self.SetBackgroundColour(wx.Colour(const.PROP_BG_COLOR))
         self.Center()
 
         # Different settings for different filetypes
@@ -59,7 +64,7 @@ class ExportOptionsDialog(wx.Dialog):
 
     def InitPngUI(self):
         pnl = wx.Panel(self)
-        pnl.SetBackgroundColour(const.AREA_BG_COLOR)
+        pnl.SetBackgroundColour(const.PROP_BG_COLOR)
 
         vbox = wx.BoxSizer(wx.VERTICAL)
         inner_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -75,8 +80,7 @@ class ExportOptionsDialog(wx.Dialog):
         inner_sizer.Add((0, 0), flag=wx.EXPAND | wx.ALL, border=6)
 
         # Pixel datatype
-        px_datatype_lbl = wx.StaticText(pnl, label=_("Export pixel datatype:"))
-        px_datatype_lbl.SetForegroundColour("#fff")
+        px_datatype_lbl = Label(pnl, label=_("Export pixel datatype:"))
 
         self.px_datatype_dropdown = DropDown(pnl, items=["uint8", "uint16", "float"],
                                              default=self.pixel_datatype)
@@ -110,7 +114,7 @@ class ExportOptionsDialog(wx.Dialog):
 
     def InitJpegUI(self):
         pnl = wx.Panel(self)
-        pnl.SetBackgroundColour(const.AREA_BG_COLOR)
+        pnl.SetBackgroundColour(const.PROP_BG_COLOR)
 
         vbox = wx.BoxSizer(wx.VERTICAL)
         inner_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -126,8 +130,7 @@ class ExportOptionsDialog(wx.Dialog):
         inner_sizer.Add((0, 0), flag=wx.EXPAND | wx.ALL, border=6)
 
         # Pixel datatype
-        px_datatype_lbl = wx.StaticText(pnl, label=_("Export pixel datatype:"))
-        px_datatype_lbl.SetForegroundColour("#fff")
+        px_datatype_lbl = Label(pnl, label=_("Export pixel datatype:"))
 
         self.px_datatype_dropdown = DropDown(pnl, items=["uint8", "uint16", "float"],
                                              default=self.pixel_datatype)
@@ -141,15 +144,11 @@ class ExportOptionsDialog(wx.Dialog):
         inner_sizer.Add((0, 0), flag=wx.EXPAND | wx.ALL, border=6)
 
         # Comment metadata
-        comment_meta_lbl = wx.StaticText(pnl, label=_("Comment metadata:"))
-        comment_meta_lbl.SetForegroundColour("#fff")
-        comment_meta_lbl.SetFont(comment_meta_lbl.GetFont().Bold())
-        inner_sizer.Add(comment_meta_lbl, flag=wx.EXPAND | wx.TOP | wx.LEFT | wx.RIGHT, border=6)
+        # comment_meta_lbl = Label(pnl, label=_("Comment metadata:"), font_bold=True)
+        # inner_sizer.Add(comment_meta_lbl, flag=wx.EXPAND | wx.TOP | wx.LEFT | wx.RIGHT, border=6)
 
-        self.comment_meta_txtctrl = TextCtrl(pnl, value=self.comment_meta,
-                                             style=wx.BORDER_SIMPLE, placeholder="",
-                                             size=(-1, 50))
-        inner_sizer.Add(self.comment_meta_txtctrl, flag=wx.EXPAND | wx.ALL, border=6)
+        # self.comment_meta_txtctrl = TextCtrl(pnl, default=self.comment_meta, size=(-1, 50))
+        # inner_sizer.Add(self.comment_meta_txtctrl, flag=wx.EXPAND | wx.ALL, border=6)
 
         pnl.SetSizer(inner_sizer)
 
@@ -169,14 +168,21 @@ class ExportOptionsDialog(wx.Dialog):
         cancel_btn.Bind(EVT_BUTTON, self.OnCancel)
         self.img_quality_field.Bind(EVT_NUMBERFIELD, self.OnJPEGQualityChange)
         self.px_datatype_dropdown.Bind(EVT_DROPDOWN, self.OnPixelDatatypeChange)
-        self.comment_meta_txtctrl.Bind(stc.EVT_STC_MODIFIED, self.OnCommentMetaChange)
+        #self.comment_meta_txtctrl.Bind(stc.EVT_STC_MODIFIED, self.OnCommentMetaChange)
 
     def OnExport(self, event):
         self.ExportImage()
 
     def ExportImage(self):
         # Export the image with the export options
-        img = self.Image
+        image = self.Image
+
+        xres = image.shape[1]
+        yres = image.shape[0]
+        spec = oiio.ImageSpec(xres, yres, 4, "float")
+        img = oiio.ImageBuf(spec)
+        img.set_pixels(oiio.ROI(), image)
+
         if self.filetype in [".jpg", ".jpeg"]:
             img.specmod().attribute("quality", self.jpeg_quality)
             img.specmod().attribute("ImageDescription", self.comment_meta)

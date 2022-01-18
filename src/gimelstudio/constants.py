@@ -1,5 +1,5 @@
 # ----------------------------------------------------------------------------
-# Gimel Studio Copyright 2019-2021 by Noah Rahm and contributors
+# Gimel Studio Copyright 2019-2022 by Noah Rahm and contributors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,21 +16,31 @@
 
 import os
 import sys
+import os.path
 
 
 # Application
 APP_FROZEN = getattr(sys, "frozen", False)
 APP_DIR = os.path.dirname(os.path.abspath(sys.argv[0]))
 
-APP_NAME = "Gimel Studio"
-APP_WEBSITE_URL = "https://gimelstudio.github.io"
-APP_DESCRIPTION = "Non-destructive, node-based 2D image graphics editor focused on simplicity, speed, elegance and usability"
-
 APP_VERSION = "0.6.0"
-APP_VERSION_TAG = "alpha1"
-APP_VERSION_FULL = "{0} {1}".format(APP_VERSION, APP_VERSION_TAG)
+APP_VERSION_TAG = " pre-alpha 2"
+APP_VERSION_FULL = "{0}{1}".format(APP_VERSION, APP_VERSION_TAG)
 
-APP_CREDITS = [""]
+APP_NAME = "Gimel Studio"
+APP_DESCRIPTION = "Non-destructive, node-based 2D image graphics editor focused on simplicity, speed, elegance and usability"
+APP_COPYRIGHT = "© 2019–2022 Noah Rahm and contributors"
+
+APP_WEBSITE_URL = "https://gimelstudio.github.io"
+APP_LICENSE_URL = "https://github.com/GimelStudio/GimelStudio/blob/master/LICENSE"
+APP_GITHUB_URL = "https://github.com/GimelStudio/GimelStudio"
+APP_CREDITS_URL = "https://github.com/GimelStudio/GimelStudio/graphs/contributors"
+APP_DISCORD_URL = "https://discord.gg/Rqw-bDr-VDpK"  # Remove dashes when using this
+APP_YOUTUBE_URL = "https://www.youtube.com/channel/UCP9CNtBPMPRwOR4jUiMMkhQ"
+
+APP_FULL_TITLE = "{0} v{1}".format(APP_NAME, APP_VERSION_FULL)
+
+APP_CONFIG_FILE = os.path.expanduser("~/.gimelstudio/pre-a2-config.json")
 
 # File system
 SUPPORTED_FT_OPEN_LIST = [
@@ -75,6 +85,18 @@ SUPPORTED_FT_SAVE_WILDCARD = \
     "TIFF file (*.tiff)|*.tiff|" \
     "All files (*.*)|*.*"
 
+PROJECT_FILE_WILDCARD = "GIMEL file (*.gimel)|*.gimel"
+
 # Colors
-AREA_BG_COLOR = "#464646"
-AREA_TOPBAR_COLOR = "#424242"
+AREA_BG_COLOR = "#242528"
+AREA_TOPBAR_COLOR = "#3f4146"
+
+PROP_HEADER_COLOR = "#3f4146"
+PROP_BG_COLOR = "#36383c"
+
+ACCENT_COLOR = "#5173b5"
+DARK_COLOR = "#1b1c1e"
+
+TEXT_COLOR = "#dfdfdf"
+
+ADD_NODE_MENU_BG = "#121314"

@@ -1,5 +1,5 @@
 # ----------------------------------------------------------------------------
-# Gimel Studio Copyright 2019-2021 by Noah Rahm and contributors
+# Gimel Studio Copyright 2019-2022 by Noah Rahm and contributors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,18 +19,22 @@ import wx
 from gsnodegraph import NodeBase as NodeView
 
 import gimelstudio.constants as const
+from gimelstudio.utils import ResizeKeepAspectRatio, ConvertImageToWx
+from gimelstudio.core import EvalInfo, RenderImage
 
 
 class Node(NodeView):
     def __init__(self, nodegraph, _id):
         NodeView.__init__(self, nodegraph, _id)
         self.nodegraph = nodegraph
-        self._id = _id
-        self._properties = {}
-        self._parameters = {}
-        self._cache = {}
-        self._cache_enabled = True
-        self._edited_flag = False
+        self.id = _id
+        self.properties = {}
+        self.parameters = {}
+        self.cache = {}
+        self.cache_enabled = True
+        self.edited_flag = False
+        self.shader_cache = None
+        self.shader_cache_enabled = True
 
         self.NodeInitProps()
         self.NodeInitParams()
@@ -41,9 +45,9 @@ class Node(NodeView):
 
         Please do not override.
         """
-        self.WidgetEventHook(idname, value)
         self.SetEditedFlag(True)
-        if render is True:
+        if render == True:
+            self.NodeWidgetEventHook(idname, value)
             self.nodegraph.parent.parent.Render()
 
     @property
@@ -81,32 +85,32 @@ class Node(NodeView):
         return False
 
     def IsNodeCacheEnabled(self):
-        return self._cache_enabled
+        return self.cache_enabled
 
     def AddProperty(self, prop):
-        self._properties[prop.IdName] = prop
-        return self._properties
+        self.properties[prop.IdName] = prop
+        return self.properties
 
     def AddParameter(self, param):
-        self._parameters[param.IdName] = param
-        return self._parameters
+        self.parameters[param.IdName] = param
+        return self.parameters
 
     def EditProperty(self, idname, value, render=True):
-        prop = self._properties[idname]
+        prop = self.properties[idname]
         prop.SetValue(value, render)
         return prop
 
     def EditParameter(self, idname, value):
-        param = self._parameters[idname]
+        param = self.parameters[idname]
         param.SetBinding(value)
         self.RemoveFromCache(idname)
         return param
 
     def SetEditedFlag(self, edited=True):
-        self._edited_flag = edited
+        self.edited_flag = edited
 
     def GetEditedFlag(self):
-        return self._edited_flag
+        return self.edited_flag
 
     def NodeInitProps(self):
         """ Define node properties for the node. These will translate into widgets for editing the property in the Node Properties Panel if the Property is not hidden with ``visible=False``.
@@ -158,22 +162,48 @@ class Node(NodeView):
     def NodePanelUI(self, parent, sizer):
         """ Create the Node property widgets for the Node Property Panel. Please do not override unless you know what you're doing.
         """
-        for prop in self._properties:
-            prop_obj = self._properties[prop]
+        for prop in self.properties:
+            prop_obj = self.properties[prop]
             if prop_obj.GetIsVisible() is True:
                 prop_obj.CreateUI(parent, sizer)
 
+    def NodeUpdateThumb(self, image):
+        if self.IsExpanded():
+            image = image.Image("numpy")
+            img = ResizeKeepAspectRatio(image, (134, image.shape[1]))
+            self.SetThumbnail(ConvertImageToWx(img))
+            self.nodegraph.UpdateNodeGraph()
+
+    def NodeEvalSelf(self):
+        return self.NodeEvaluation(EvalInfo(self))
+
+    def NodeEvaluation(self, eval_info):
+        return None
+
+    def NodeWidgetEventHook(self, idname, value):
+        """ Property widget callback event hook. This method is called after the property widget has returned the new value. It is useful for updating the node itself or other node properties as a result of a change in the value of the property.
+
+        **Keep in mind that this is only called after a property is edited by the user. If you are looking for more flexibility, you should look into creating your own Property.**
+
+        :prop idname: idname of the property which was updated and is calling this method
+        :prop value: updated value of the property
+        """
+        pass
+
+    def NodeDndEventHook(self):
+        pass
+
     def ClearCache(self):
-        self._cache = {}
+        self.cache = {}
 
     def RemoveFromCache(self, name):
         cached = self.IsInCache(name)
         if cached is True and self.IsNodeCacheEnabled() is True:
-            del self._cache[name]
+            del self.cache[name]
 
     def IsInCache(self, name):
         try:
-            self._cache[name]
+            self.cache[name]
             return True
         except KeyError:
             return False
@@ -182,16 +212,16 @@ class Node(NodeView):
         cached = self.IsInCache(name)
 
         # Basic node cache implementation
-        if self.IsNodeCacheEnabled() is True:
-            if self.GetEditedFlag() is True and cached is True:
-                value = self._cache[name]
+        if self.IsNodeCacheEnabled() == True:
+            if self.GetEditedFlag() == True and cached == True:
+                value = self.cache[name]
                 self.SetEditedFlag(False)
-                print("Used Cache: ", self._label)
+                # print("Used Cache: ", self._label)
             else:
                 value = eval_info.EvaluateParameter(name)
-                self._cache[name] = value
+                self.cache[name] = value
                 self.SetEditedFlag(False)
-                print("Evaluated: ", self._label)
+                # print("Evaluated: ", self._label)
         else:
             value = eval_info.EvaluateParameter(name)
 
@@ -203,32 +233,39 @@ class Node(NodeView):
     @property
     def EvaluateNode(self):
         """ Internal method. Please do not override. """
+        if self.IsMuted():
+            return self.MutedNodeEvaluation
         return self.NodeEvaluation
 
-    def NodeEvaluation(self, eval_info):
-        return None
-
-    def WidgetEventHook(self, idname, value):
-        """ Property widget callback event hook. This method is called after the property widget has returned the new value. It is useful for updating the node itself or other node properties as a result of a change in the value of the property.
-
-        **Keep in mind that this is only called after a property is edited by the user. If you are looking for more flexibility, you should look into creating your own Property.**
-
-        :prop idname: idname of the property which was updated and is calling this method
-        :prop value: updated value of the property
-        """
-        pass
+    def EvalMutedNode(self, eval_info):
+        try:
+            image = self.EvalParameter(eval_info, "image").Image("numpy")
+        except:
+            image = self.EvalParameter(eval_info, "image_1").Image("numpy")
+        render_image = RenderImage()
+        render_image.SetAsImage(image)
+        self.NodeUpdateThumb(render_image)
+        return render_image
 
     def RenderGLSL(self, path, props, image, image2=None):
-        file_path = os.path.expanduser(os.path.expandvars(path))
-        shader_path = os.path.join(const.APP_DIR, file_path)
-        shader = self.GLSLRenderer.LoadGLSLFile(shader_path)
+        if self.shader_cache_enabled == True:
+            if self.shader_cache == None:
+                self.shader_cache = self.LoadGLSL(path)
+            shader = self.shader_cache
+        else:
+            shader = self.LoadGLSL(path)
         self.GLSLRenderer.Render(shader, props, image, image2)
         return self.GLSLRenderer.ReadNumpy()
 
+    def LoadGLSL(self, path):
+        file_path = os.path.expanduser(os.path.expandvars(path))
+        shader_path = os.path.join(const.APP_DIR, file_path)
+        return self.GLSLRenderer.LoadGLSLFile(shader_path)
+
     def RefreshNodeGraph(self):
         """ Force a refresh of the Node Graph panel. """
-        self.nodegraph.RefreshGraph()
+        self.nodegraph.UpdateNodeGraph()
 
     def RefreshPropertyPanel(self):
         """ Force a refresh of the Node Properties panel. """
-        wx.CallAfter(self.nodegraph.parent.prop_pnl.UpdatePanelContents, self)
+        wx.CallAfter(self.nodegraph.parent.PropertiesPanel.UpdatePanelContents, self)

@@ -3,7 +3,10 @@
 __pycache__
 *.pyc
 
-# Ignore pyinstaller build folders/files
+# Ignore build folders/files
+.conda
+.tools
+.vscode
 build/*
 dist/*
 *.spec
@@ -18,6 +21,9 @@ src/*.exr
 gsnodegraph
 gswidgetkit
 tests
+
+# Ignore test Gimel Studio project files
+*gimel
 
 # Ignore .sketch files
 *.sketch

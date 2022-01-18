@@ -1,5 +1,5 @@
 # ----------------------------------------------------------------------------
-# Gimel Studio Copyright 2019-2021 by Noah Rahm and contributors
+# Gimel Studio Copyright 2019-2022 by Noah Rahm and contributors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,8 +18,10 @@
 
 import wx
 import wx.lib.agw.flatmenu as flatmenu
-from wx.lib.agw.artmanager import ArtManager, RendererBase, DCSaver
+from wx.lib.agw.artmanager import ArtManager, DCSaver
 from wx.lib.agw.fmresources import ControlFocus, ControlPressed
+
+from gimelstudio.constants import ACCENT_COLOR, DARK_COLOR
 
 
 def switchRGBtoBGR(colour):
@@ -32,27 +34,25 @@ class UIMenuBarRenderer(flatmenu.FMRenderer):
 
         self.highlightCheckAndRadio = True
 
-        self.menuFaceColour = wx.Colour("#252525")
-        self.menuBarFaceColour = wx.Colour("#252525")
+        self.menuFaceColour = wx.Colour(DARK_COLOR)
+        self.menuBarFaceColour = wx.Colour(DARK_COLOR)
 
-        self.menuBarFocusFaceColour = wx.Colour("#5874C5")
-        self.menuBarFocusBorderColour = wx.Colour("#5874C5")
-        self.menuBarPressedFaceColour = wx.Colour("#5874C5")
-        self.menuBarPressedBorderColour = wx.Colour("#5874C5")
+        self.menuBarFocusFaceColour = wx.Colour(ACCENT_COLOR)
+        self.menuBarFocusBorderColour = wx.Colour(ACCENT_COLOR)
+        self.menuBarPressedFaceColour = wx.Colour(ACCENT_COLOR)
+        self.menuBarPressedBorderColour = wx.Colour(ACCENT_COLOR)
 
-        self.menuFocusFaceColour = wx.Colour("#5874C5")
-        self.menuFocusBorderColour = wx.Colour("#5874C5")
-        self.menuPressedFaceColour = wx.Colour("#5874C5")
-        self.menuPressedBorderColour = wx.Colour("#5874C5")
+        self.menuFocusFaceColour = wx.Colour(ACCENT_COLOR)
+        self.menuFocusBorderColour = wx.Colour(ACCENT_COLOR)
+        self.menuPressedFaceColour = wx.Colour(ACCENT_COLOR)
+        self.menuPressedBorderColour = wx.Colour(ACCENT_COLOR)
 
-        self.buttonFaceColour = wx.Colour("#5874C5")
-        self.buttonBorderColour = wx.Colour("#5874C5")
-        self.buttonFocusFaceColour = wx.Colour("#5874C5")
-        self.buttonFocusBorderColour = wx.Colour("#5874C5")
-        self.buttonPressedFaceColour = wx.Colour("#5874C5")
-        self.buttonPressedBorderColour = wx.Colour("#5874C5")
-
-
+        self.buttonFaceColour = wx.Colour(ACCENT_COLOR)
+        self.buttonBorderColour = wx.Colour(ACCENT_COLOR)
+        self.buttonFocusFaceColour = wx.Colour(ACCENT_COLOR)
+        self.buttonFocusBorderColour = wx.Colour(ACCENT_COLOR)
+        self.buttonPressedFaceColour = wx.Colour(ACCENT_COLOR)
+        self.buttonPressedBorderColour = wx.Colour(ACCENT_COLOR)
 
     def DrawSeparator(self, dc, xCoord, yCoord, textX, sepWidth):
         """
@@ -115,7 +115,7 @@ class UIMenuBarRenderer(flatmenu.FMRenderer):
             pen = wx.Pen(penColour)
             dc.SetPen(pen)
             dc.SetBrush(backBrush)
-            dc.DrawRectangle(rect)
+            dc.DrawRoundedRectangle(rect, 3)
 
         # Draw the left margin gradient
         if self.drawLeftMargin:
@@ -262,6 +262,46 @@ class UIMenuBarRenderer(flatmenu.FMRenderer):
             rr = wx.Rect(xx, rect.y + 1, rect.height - 2, rect.height - 2)
             dc.DrawBitmap(rightArrowBmp, rr.x + 4, rr.y + (rr.height - 16) / 2, True)
 
+    def DrawButton(self, dc, rect, state, colour=None):
+        """
+        Draws a button.
+
+        :param `dc`: an instance of :class:`wx.DC`;
+        :param `rect`: an instance of :class:`wx.Rect`, representing the button client rectangle;
+        :param integer `state`: the button state;
+        :param `colour`: if not ``None``, an instance of :class:`wx.Colour` to be used to draw
+         the :class:`FlatMenuItem` background.
+        """
+
+        # switch according to the status
+        if state == ControlFocus:
+            if colour is None:
+                penColour   = self.buttonFocusBorderColour
+                brushColour = self.buttonFocusFaceColour
+            else:
+                penColour   = colour
+                brushColour = ArtManager.Get().LightColour(colour, 75)
+
+        elif state == ControlPressed:
+            if colour is None:
+                penColour   = self.buttonPressedBorderColour
+                brushColour = self.buttonPressedFaceColour
+            else:
+                penColour   = colour
+                brushColour = ArtManager.Get().LightColour(colour, 60)
+        else:
+            if colour is None:
+                penColour   = self.buttonBorderColour
+                brushColour = self.buttonFaceColour
+            else:
+                penColour   = colour
+                brushColour = ArtManager.Get().LightColour(colour, 75)
+
+        dcsaver = DCSaver(dc)
+        dc.SetPen(wx.Pen(penColour))
+        dc.SetBrush(wx.Brush(brushColour))
+        dc.DrawRoundedRectangle(rect, 2)
+
     def DrawMenuBar(self, menubar, dc):
         """
         Draws everything for :class:`FlatMenuBar`.
@@ -365,7 +405,7 @@ class UIMenuBarRenderer(flatmenu.FMRenderer):
                     # Fill the bitmap with the masking colour
                     memDc.SetPen(wx.Pen(wx.Colour(255, 0, 0)))
                     memDc.SetBrush(wx.Brush(wx.Colour(255, 0, 0)))
-                    memDc.DrawRectangle(0, 0, rect.width, rect.height)
+                    memDc.DrawRoundedRectangle(0, 0, rect.width, rect.height, 3)
                     memDc.SetFont(fnt)
 
                 if location == wx.NOT_FOUND or location >= len(fixedText):
@@ -579,7 +619,7 @@ class UIMenuBarRenderer(flatmenu.FMRenderer):
             # make sure we draw only visible items
             pp = flatmenu.ClientToScreen(wx.Point(0, posy))
 
-            menuBottom = (self.scrollBarButtons and [pp.y] or [pp.y + flatmenu.GetItemHeight()*2])[0]
+            menuBottom = (self.scrollBarButtons and [pp.y] or [pp.y + flatmenu.GetItemHeight() * 2])[0]
 
             if menuBottom > screenHeight:
                 break

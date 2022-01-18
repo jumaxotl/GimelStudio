@@ -1,5 +1,5 @@
 # ----------------------------------------------------------------------------
-# Gimel Studio Copyright 2019-2021 by Noah Rahm and contributors
+# Gimel Studio Copyright 2019-2022 by Noah Rahm and contributors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,6 +22,8 @@ import wx
 import wx.adv
 
 from gimelstudio import AppConfiguration, ApplicationFrame
+from gimelstudio.interface import StartupSplashScreen
+from gimelstudio.constants import APP_FROZEN
 
 # Fix blurry text on Windows 10
 import ctypes
@@ -48,6 +50,11 @@ builtins.__dict__['_'] = wx.GetTranslation
 
 class MainApp(wx.App):
 
+    def InitLocale(self):
+        if sys.platform.startswith('win') and sys.version_info > (3,8):
+            import locale
+            locale.setlocale(locale.LC_ALL, 'C')
+
     def OnInit(self):
         # Create a global instance of the app configuration class
         self.app_config = AppConfiguration(self)
@@ -73,6 +80,11 @@ class MainApp(wx.App):
         self.SetTopWindow(self.frame)
         self.frame.Show(True)
 
+        # Show the startup splash screen
+        if APP_FROZEN is True:
+            splash = StartupSplashScreen()
+            splash.Show()
+
         return True
 
     def InitI18n(self):
@@ -92,8 +104,8 @@ class MainApp(wx.App):
         if platform.system() == "Linux":
             try:
                 os.environ["LANGUAGE"] = supported_langs[language]
-            except (ValueError, KeyError):
-                pass
+            except (ValueError, KeyError) as error:
+                print(error)
 
 
 if __name__ == '__main__':

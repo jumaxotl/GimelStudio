@@ -1,5 +1,5 @@
 # ----------------------------------------------------------------------------
-# Gimel Studio Copyright 2019-2021 by Noah Rahm and contributors
+# Gimel Studio Copyright 2019-2022 by Noah Rahm and contributors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ class EvalInfo(object):
 
     def EvaluateParameter(self, name):
         """ Evaluates the value of a parameter. """
-        param = self.node._parameters[name]
+        param = self.node.parameters[name]
         if param.binding:
             # Evaluate the next node
             info = EvalInfo(param.binding)
@@ -35,5 +35,5 @@ class EvalInfo(object):
 
     def EvaluateProperty(self, name):
         """ Evaluates the value of a property. """
-        prop = self.node._properties[name]
+        prop = self.node.properties[name]
         return prop.value

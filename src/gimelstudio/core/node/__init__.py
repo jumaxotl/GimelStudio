@@ -1,7 +1,4 @@
 from .node import Node
-from .parameter import Parameter, RenderImageParam
-from .property import (Property, PositiveIntegerProp,
-                       ChoiceProp,
-                       OpenFileChooserProp,
-                       LabelProp,
-                       SLIDER_WIDGET, SPINBOX_WIDGET)
+from .parameter import Parameter, RenderImageParam, IntegerParam
+from .property import (Property, PositiveIntegerProp, XYZProp, LabelProp,
+                       ChoiceProp, OpenFileChooserProp, ActionProp, TextProp)

@@ -1,5 +1,5 @@
 # ----------------------------------------------------------------------------
-# Gimel Studio Copyright 2019-2021 by Noah Rahm and contributors
+# Gimel Studio Copyright 2019-2022 by Noah Rahm and contributors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,12 +20,11 @@ import wx.lib.newevent
 from typing import List
 from gswidgetkit import (CheckBox, DropDown, EVT_DROPDOWN,
                          NumberField, EVT_NUMBERFIELD_CHANGE,
-                         NativeTextCtrl, TextCtrl, Button, EVT_BUTTON)
+                         NativeTextCtrl, TextCtrl, Button, EVT_BUTTON,
+                         Label)
 
 import gimelstudio.constants as const
-import gimelstudio.interface.basewidgets.foldpanelbar as fpb
 from gimelstudio.config import AppConfiguration
-from gimelstudio.datafiles import ICON_ARROW_DOWN, ICON_ARROW_RIGHT
 
 
 class PreferencesPage(wx.Panel):
@@ -50,7 +49,7 @@ class PreferencesPage(wx.Panel):
         self._category_name = value
 
     def BuildUI(self):
-        self.SetBackgroundColour(const.AREA_BG_COLOR)
+        self.SetBackgroundColour(const.PROP_BG_COLOR)
         self.LoadWidgets(self._category_name)
         self.SetSizer(self.main_layout)
 
@@ -59,9 +58,6 @@ class PreferencesPage(wx.Panel):
         # TODO: Add an icon property to "_options"
         # TODO: Make the names in the ``config.json`` file more consistent (in other words, create guide to follow)
         # TODO: Should we add a switch widget (an alternative to a checkbox)?
-
-        # TODO: This crashes Gimel Studio (wx.Sizer assertion error)
-        # self.main_layout.AddSpacer(8)
 
         grid_num = start_grid_num
         new_widget = None
@@ -111,8 +107,7 @@ class PreferencesPage(wx.Panel):
                     if setting_options:
                         if setting_options["Display Widget"] == "Drop Down":
                             new_widget = wx.BoxSizer(wx.HORIZONTAL)
-                            label = wx.StaticText(self, label=_(setting_name) + ":")
-                            label.SetForegroundColour("#FFFFFF")
+                            label = Label(self, label=_(setting_name) + ":")
                             drop_down = DropDown(self, items=setting_options["Items"],
                                                  default=setting_val)
                             drop_down.Bind(EVT_DROPDOWN,
@@ -124,8 +119,7 @@ class PreferencesPage(wx.Panel):
                             new_widget.Add(drop_down, 1, wx.EXPAND)
                         elif setting_options["Display Widget"] == "Line Ctrl":
                             new_widget = wx.BoxSizer(wx.HORIZONTAL)
-                            label = wx.StaticText(self, label=_(setting_name) + ":")
-                            label.SetForegroundColour("#FFFFFF")
+                            label = Label(self, label=_(setting_name) + ":")
                             text_ctrl = NativeTextCtrl(self, value=setting_val, style=wx.SIMPLE_BORDER)
                             text_ctrl.Bind(wx.EVT_TEXT,
                                            lambda event,
@@ -136,10 +130,8 @@ class PreferencesPage(wx.Panel):
                             new_widget.Add(text_ctrl, 1, wx.EXPAND)
                         elif setting_options["Display Widget"] == "Text Ctrl":
                             new_widget = wx.BoxSizer(wx.HORIZONTAL)
-                            label = wx.StaticText(self, label=_(setting_name) + ":")
-                            label.SetForegroundColour("#FFFFFF")
-                            text_ctrl = TextCtrl(self, value=setting_val, placeholder=setting_options["Placeholder"],
-                                                 style=wx.SIMPLE_BORDER)
+                            label = Label(self, label=_(setting_name) + ":")
+                            text_ctrl = TextCtrl(self, default=setting_val)
                             text_ctrl.Bind(wx.stc.EVT_STC_CHANGE,
                                            lambda event,
                                            name=setting_name: self.OnWidgetChanged(event=event,
@@ -149,8 +141,7 @@ class PreferencesPage(wx.Panel):
                             new_widget.Add(text_ctrl, 1, wx.EXPAND)
                         else:
                             new_widget = wx.BoxSizer(wx.HORIZONTAL)
-                            label = wx.StaticText(self, label=_(setting_name) + ":")
-                            label.SetForegroundColour("#FFFFFF")
+                            label = Label(self, label=_(setting_name) + ":")
                             text_ctrl = NativeTextCtrl(self, value=setting_val, style=wx.SIMPLE_BORDER)
                             text_ctrl.Bind(wx.EVT_TEXT,
                                            lambda event,
@@ -161,8 +152,7 @@ class PreferencesPage(wx.Panel):
                             new_widget.Add(text_ctrl, 1, wx.EXPAND)
                 else:
                     new_widget = wx.BoxSizer(wx.HORIZONTAL)
-                    label = wx.StaticText(self, label=_(setting_name) + ":")
-                    label.SetForegroundColour("#FFFFFF")
+                    label = Label(self, label=_(setting_name) + ":")
                     text_ctrl = NativeTextCtrl(self, value=setting_val, style=wx.SIMPLE_BORDER)
                     text_ctrl.Bind(wx.EVT_TEXT,
                                    lambda event,
@@ -202,12 +192,11 @@ class AddOnsPage(wx.Panel):
         self.BuildUI()
 
     def BuildUI(self):
-        self.SetBackgroundColour(const.AREA_BG_COLOR)
+        self.SetBackgroundColour(const.PROP_BG_COLOR)
 
         main_layout = wx.BoxSizer(wx.VERTICAL)
 
-        title_text = wx.StaticText(self, label="Add-ons")
-        title_text.SetForegroundColour("#FFFFFF")
+        title_text = Label(self, label=_("Add-ons"))
         main_layout.Add(title_text, 1, wx.EXPAND)
 
         self.SetSizer(main_layout)
@@ -222,12 +211,11 @@ class TemplatesPage(wx.Panel):
         self.BuildUI()
 
     def BuildUI(self):
-        self.SetBackgroundColour(const.AREA_BG_COLOR)
+        self.SetBackgroundColour(const.PROP_BG_COLOR)
 
         main_layout = wx.BoxSizer(wx.VERTICAL)
 
-        title_text = wx.StaticText(self, label="Templates")
-        title_text.SetForegroundColour("#FFFFFF")
+        title_text = Label(self, label=_("Templates"))
         main_layout.Add(title_text, 1, wx.EXPAND)
 
         self.SetSizer(main_layout)
@@ -242,12 +230,30 @@ class NodesPage(wx.Panel):
         self.BuildUI()
 
     def BuildUI(self):
-        self.SetBackgroundColour(const.AREA_BG_COLOR)
+        self.SetBackgroundColour(const.PROP_BG_COLOR)
 
         main_layout = wx.BoxSizer(wx.VERTICAL)
 
-        title_text = wx.StaticText(self, label="Nodes")
-        title_text.SetForegroundColour("#FFFFFF")
+        title_text = Label(self, label=_("Nodes"))
+        main_layout.Add(title_text, 1, wx.EXPAND)
+
+        self.SetSizer(main_layout)
+
+
+class SystemPage(wx.Panel):
+    def __init__(self, parent):
+        wx.Panel.__init__(self, parent)
+
+        self.parent = parent
+
+        self.BuildUI()
+
+    def BuildUI(self):
+        self.SetBackgroundColour(const.PROP_BG_COLOR)
+
+        main_layout = wx.BoxSizer(wx.VERTICAL)
+
+        title_text = Label(self, label=_("System"))
         main_layout.Add(title_text, 1, wx.EXPAND)
 
         self.SetSizer(main_layout)
@@ -259,7 +265,6 @@ class SidebarPanel(wx.Panel):
 
         self._categories = categories
 
-        # TODO: Add padding around the edges
         self.main_layout = wx.BoxSizer(wx.VERTICAL)
         self._buttons = []
 
@@ -274,7 +279,7 @@ class SidebarPanel(wx.Panel):
         self._buttons = value
 
     def BuildUI(self):
-        self.SetBackgroundColour(const.AREA_TOPBAR_COLOR)
+        self.SetBackgroundColour(const.PROP_BG_COLOR)
 
         self.main_layout.AddSpacer(16)
 
@@ -292,8 +297,10 @@ class SidebarPanel(wx.Panel):
 class PreferencesDialog(wx.Dialog):
     def __init__(self, parent, title: str, app_config: AppConfiguration, categories: list):
         # TODO: Can we create our own title bar (instead of the default native one)?
-        wx.Dialog.__init__(self, parent, title=title, size=[800, 600],
-                           style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
+        wx.Dialog.__init__(self, parent, title=title, size=(800, 600),
+                           style=wx.DEFAULT_DIALOG_STYLE)
+
+        self.SetBackgroundColour(const.PROP_BG_COLOR)
 
         self._app_config = app_config
         self._categories = categories
@@ -322,22 +329,30 @@ class PreferencesDialog(wx.Dialog):
         # Category pages
         for category in self._categories:
             # TODO: Finish the special pages like "Add-ons", "Nodes" and "Templates"
-            category_page: List[PreferencesPage, AddOnsPage, NodesPage, TemplatesPage] = None
+            category_page: List[PreferencesPage, AddOnsPage, NodesPage, TemplatesPage, SystemPage] = None
             if category == "Add-ons":
                 category_page = AddOnsPage(self.book)
             elif category == "Nodes":
                 category_page = NodesPage(self.book)
             elif category == "Templates":
                 category_page = TemplatesPage(self.book)
+            elif category == "System":
+                category_page = SystemPage(self.book)
             else:
                 category_page = PreferencesPage(self.book, category, self._app_config)
 
             if category_page is not None:
                 self.book.AddPage(category_page, category)
 
-        self.main_layout.Add(self.sidebar_panel, flag=wx.GROW)
-        self.main_layout.Add(self.book, 3, wx.EXPAND)
+        self.main_layout.Add(self.sidebar_panel, flag=wx.GROW | wx.ALL, border=6)
+        self.main_layout.Add(self.book, 3, wx.EXPAND | wx.ALL, border=16)
         self.SetSizer(self.main_layout)
+
+        # Highlight the "General" button by default
+        self.sidebar_panel.buttons[0].SetHighlighted(True)
+
+        self.Layout()
+        self.Refresh()
 
     def OnCategoryButtonPressed(self, event, index):
         # TODO: The following should work (based on wxPython bindings)

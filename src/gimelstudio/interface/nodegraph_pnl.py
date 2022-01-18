@@ -1,5 +1,5 @@
 # ----------------------------------------------------------------------------
-# Gimel Studio Copyright 2019-2021 by Noah Rahm and contributors
+# Gimel Studio Copyright 2019-2022 by Noah Rahm and contributors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,24 +15,21 @@
 # ----------------------------------------------------------------------------
 
 import wx
-import wx.lib.agw.flatmenu as flatmenu
-from gswidgetkit import Button, EVT_BUTTON, NumberField, EVT_NUMBERFIELD_CHANGE
+
+from gswidgetkit import (Label, NumberField, EVT_NUMBERFIELD_CHANGE)
 from gsnodegraph import (EVT_GSNODEGRAPH_NODESELECT,
                          EVT_GSNODEGRAPH_NODECONNECT,
                          EVT_GSNODEGRAPH_NODEDISCONNECT,
-                         EVT_GSNODEGRAPH_MOUSEZOOM)
+                         EVT_GSNODEGRAPH_MOUSEZOOM,
+                         EVT_GSNODEGRAPH_ADDNODEBTN)
 from gsnodegraph import NodeGraph as NodeGraphBase
 
 import gimelstudio.constants as const
-from gimelstudio.datafiles import (ICON_NODEGRAPH_PANEL, ICON_MORE_MENU_SMALL,
-                                   ICON_MOUSE_LMB_MOVEMENT, ICON_MOUSE_LMB,
-                                   ICON_KEY_CTRL, ICON_MOUSE_MMB_MOVEMENT,
+from gimelstudio.datafiles import (ICON_NODEGRAPH_PANEL, ICON_MOUSE_LMB_MOVEMENT, 
+                                   ICON_MOUSE_LMB, ICON_KEY_CTRL, ICON_MOUSE_MMB_MOVEMENT,
                                    ICON_MOUSE_RMB)
-from .utils import ComputeMenuPosAlignedLeft
 from .addnode_menu import AddNodeMenu
 
-ID_MENU_UNDOCKPANEL = wx.NewIdRef()
-ID_MENU_HIDEPANEL = wx.NewIdRef()
 ID_ADDNODEMENU = wx.NewIdRef()
 
 
@@ -46,12 +43,12 @@ class NodeGraph(NodeGraphBase):
 
 
 class NodeGraphPanel(wx.Panel):
-    def __init__(self, parent, registry, id=wx.ID_ANY, pos=wx.DefaultPosition,
-                 size=wx.DefaultSize, style=wx.NO_BORDER | wx.TAB_TRAVERSAL):
-        wx.Panel.__init__(self, parent, id, pos, size, style)
+    def __init__(self, parent, *args, **kwargs):
+        wx.Panel.__init__(self, parent, id=wx.ID_ANY, pos=wx.DefaultPosition,
+                          size=wx.DefaultSize, style=wx.NO_BORDER | wx.TAB_TRAVERSAL)
 
+        self.registry = kwargs["registry"]
         self.parent = parent
-        self.registry = registry
 
         self.SetBackgroundColour(const.AREA_BG_COLOR)
 
@@ -66,34 +63,31 @@ class NodeGraphPanel(wx.Panel):
         topbar_sizer = wx.GridBagSizer(vgap=1, hgap=1)
 
         self.area_icon = wx.StaticBitmap(topbar, bitmap=ICON_NODEGRAPH_PANEL.GetBitmap())
-        self.area_label = wx.StaticText(topbar, label="")
-        self.area_label.SetForegroundColour("#fff")
-        self.area_label.SetFont(self.area_label.GetFont().Bold())
+        self.area_label = Label(topbar, label="", font_bold=False)
 
         self.zoom_field = NumberField(topbar, default_value=100, label=_("Zoom"),
                                       min_value=25, max_value=250, suffix="%",
-                                      show_p=False)
-        self.menu_button = Button(topbar, label="", flat=True,
-                                  bmp=(ICON_MORE_MENU_SMALL.GetBitmap(), 'left'))
+                                      show_p=False, disable_precise=True)
 
         topbar_sizer.Add(self.area_icon, (0, 0), flag=wx.LEFT | wx.TOP | wx.BOTTOM, border=8)
         topbar_sizer.Add(self.area_label, (0, 1), flag=wx.ALL, border=8)
-        topbar_sizer.Add(self.zoom_field, (0, 3), flag=wx.ALL, border=3)
-        topbar_sizer.Add(self.menu_button, (0, 4), flag=wx.ALL, border=3)
+        topbar_sizer.Add(self.zoom_field, (0, 4), flag=wx.ALL, border=3)
+        topbar_sizer.Add((10, 10), (0, 5), flag=wx.ALL, border=3)
         topbar_sizer.AddGrowableCol(2)
 
         topbar.SetSizer(topbar_sizer)
 
         self.nodegraph = NodeGraph(self, self.registry, size=(-1, self.Size[0]-20))
 
-        # here for testing
-        self.nodegraph.AddNode('corenode_image', wx.Point(100, 30))
-        self.nodegraph.AddNode('corenode_image', wx.Point(100, 200))
-        self.nodegraph.AddNode('corenode_blur', wx.Point(600, 200))
-        self.nodegraph.AddNode('corenode_opacity', wx.Point(300, 200))
-        self.nodegraph.AddNode('corenode_outputcomposite', wx.Point(900, 270))
-        self.nodegraph.AddNode('corenode_flip', wx.Point(500, 300))
-        self.nodegraph.AddNode('corenode_alpha_over', wx.Point(300, 350))
+        # Here for testing
+        if const.APP_FROZEN is False:
+            self.nodegraph.AddNode('corenode_blur', pos=wx.Point(600, 200))
+            self.nodegraph.AddNode('corenode_opacity', pos=wx.Point(310, 200))
+            self.nodegraph.AddNode('corenode_flip', pos=wx.Point(500, 300))
+
+        # Add default image and output node
+        self.nodegraph.AddNode('corenode_image', pos=wx.Point(100, 250))
+        self.nodegraph.AddNode('corenode_outputcomposite', pos=wx.Point(950, 250))
 
         main_sizer.Add(topbar, flag=wx.EXPAND | wx.LEFT | wx.RIGHT)
         main_sizer.Add(self.nodegraph, 1, flag=wx.EXPAND | wx.BOTH)
@@ -104,12 +98,10 @@ class NodeGraphPanel(wx.Panel):
         self.nodegraph.Bind(EVT_GSNODEGRAPH_NODECONNECT, self.NodeConnectEvent)
         self.nodegraph.Bind(EVT_GSNODEGRAPH_NODEDISCONNECT, self.NodeDisconnectEvent)
         self.nodegraph.Bind(EVT_GSNODEGRAPH_MOUSEZOOM, self.ZoomNodeGraph)
+        self.nodegraph.Bind(EVT_GSNODEGRAPH_ADDNODEBTN, self.OnAddNodeMenuButton)
         self.nodegraph.Bind(wx.EVT_ENTER_WINDOW, self.OnAreaFocus)
         self.zoom_field.Bind(EVT_NUMBERFIELD_CHANGE, self.ChangeZoom)
-        self.menu_button.Bind(EVT_BUTTON, self.OnAreaMenuButton)
         self.parent.Bind(wx.EVT_MENU, self.OnAddNodeMenu, id=ID_ADDNODEMENU)
-        self.Bind(wx.EVT_MENU, self.OnMenuUndockPanel, id=ID_MENU_UNDOCKPANEL)
-        self.Bind(wx.EVT_MENU, self.OnMenuHidePanel, id=ID_MENU_HIDEPANEL)
 
         # Keyboard shortcut bindings
         self.accel_tbl = wx.AcceleratorTable([(wx.ACCEL_SHIFT, ord('A'),
@@ -140,11 +132,11 @@ class NodeGraphPanel(wx.Panel):
     def ImageViewport(self):
         return self.parent.imageviewport_pnl
 
-    def AddNode(self, idname, pos, location):
-        return self.nodegraph.AddNode(idname, pos, location)
+    def AddNode(self, idname, nodeid, pos, location):
+        return self.nodegraph.AddNode(idname, nodeid, pos, location)
 
     def UpdateNodegraph(self):
-        self.nodegraph.UpdateDrawing()
+        self.nodegraph.UpdateNodeGraph()
 
     def UpdateNodePropertiesPnl(self, event):
         self.PropertiesPanel.UpdatePanelContents(event.value)
@@ -157,12 +149,23 @@ class NodeGraphPanel(wx.Panel):
 
     def ChangeZoom(self, event):
         level = event.value / 100.0
+        # print(level, " <---> ", event.value)
+        # if event.value > 60 and event.value < 310:
         self.nodegraph.SetZoomLevel(level)
 
     def ZoomNodeGraph(self, event):
         self.zoom_field.SetValue(event.value)
         self.zoom_field.UpdateDrawing()
         self.zoom_field.Refresh()
+
+    def PopupAddNodeMenu(self, pos):
+        self.addnodemenu = AddNodeMenu(self, self.registry,
+                                       size=wx.Size(250, self.Size[1] - 50))
+        self.addnodemenu.Position(pos, (2, 2))
+        self.addnodemenu.SetSize(250, 400)
+        if self.addnodemenu.IsShown() is not True:
+            self.addnodemenu.Show()
+
 
     def OnAreaFocus(self, event):
         self.Statusbar.PushContextHints(2, mouseicon=ICON_MOUSE_LMB_MOVEMENT,
@@ -180,40 +183,10 @@ class NodeGraphPanel(wx.Panel):
         self.Statusbar.UpdateStatusBar()
 
     def OnAddNodeMenu(self, event):
-        """ Event handler to bring up the Add Node menu. """
-        self.addnodemenu = AddNodeMenu(self, self.registry,
-                                       size=wx.Size(250, self.Size[1] - 50))
         pos = wx.GetMousePosition()
-        self.addnodemenu.Position((pos[0]-125, pos[1]-100), (2, 2))
-        self.addnodemenu.SetSize(250, 400)
-        if self.addnodemenu.IsShown() is not True:
-            self.addnodemenu.Show()
-
-    def OnLoseFocus(self, event):
-        self.Dismiss()
-
-    def OnAreaMenuButton(self, event):
-        self.CreateAreaMenu()
-        pos = ComputeMenuPosAlignedLeft(self.area_dropdownmenu, self.menu_button)
-        self.area_dropdownmenu.Popup(pos, self)
-
-    def OnMenuUndockPanel(self, event):
-        self.AUIManager.GetPane("nodegraph").Float()
-        self.AUIManager.Update()
-
-    def OnMenuHidePanel(self, event):
-        self.AUIManager.GetPane("nodegraph").Hide()
-        self.AUIManager.Update()
-
-    def CreateAreaMenu(self):
-        self.area_dropdownmenu = flatmenu.FlatMenu()
-
-        undockpanel_menuitem = flatmenu.FlatMenuItem(self.area_dropdownmenu,
-                                                     ID_MENU_UNDOCKPANEL,
-                                                     _("Undock panel"), "", wx.ITEM_NORMAL)
-        self.area_dropdownmenu.AppendItem(undockpanel_menuitem)
-
-        hidepanel_menuitem = flatmenu.FlatMenuItem(self.area_dropdownmenu,
-                                                   ID_MENU_HIDEPANEL,
-                                                   _("Hide panel"), "", wx.ITEM_NORMAL)
-        self.area_dropdownmenu.AppendItem(hidepanel_menuitem)
+        pos = (pos[0]-125, pos[1]-100)
+        self.PopupAddNodeMenu(pos)
+        
+    def OnAddNodeMenuButton(self, event):
+        pos = (8, self.nodegraph.GetRect()[3]-310)
+        self.PopupAddNodeMenu(pos)

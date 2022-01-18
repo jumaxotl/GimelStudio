@@ -1,5 +1,5 @@
 # ----------------------------------------------------------------------------
-# Gimel Studio Copyright 2019-2021 by Noah Rahm and contributors
+# Gimel Studio Copyright 2019-2022 by Noah Rahm and contributors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,29 +15,26 @@
 # ----------------------------------------------------------------------------
 
 import wx
-import wx.lib.agw.flatmenu as flatmenu
-from gswidgetkit import EVT_BUTTON, Button
+import gswidgetkit.foldpanelbar as fpb
+from gswidgetkit import (EVT_BUTTON, Button, Label)
 
-import gimelstudio.constants as const
-import gimelstudio.interface.basewidgets.foldpanelbar as fpb
+from gimelstudio.constants import (PROP_BG_COLOR, AREA_BG_COLOR, 
+                                   AREA_TOPBAR_COLOR, TEXT_COLOR)
 from gimelstudio.datafiles import (ICON_HELP, ICON_NODEPROPERTIES_PANEL,
                                    ICON_MORE_MENU_SMALL, ICON_MOUSE_LMB,
                                    ICON_MOUSE_MMB, ICON_MOUSE_RMB)
-
-from .utils import ComputeMenuPosAlignedLeft  # TODO: move to gswidgetkit utilities
-
-ID_MENU_UNDOCKPANEL = wx.NewIdRef()
-ID_MENU_HIDEPANEL = wx.NewIdRef()
+from gimelstudio.core.node.property import ThumbProp
+from .message_dlgs import ShowNotImplementedDialog
+from .panel_base import PanelBase
 
 
-class NodePropertiesPanel(wx.Panel):
-    def __init__(self, parent, id=wx.ID_ANY, pos=wx.DefaultPosition, size=wx.DefaultSize,
-                 style=wx.NO_BORDER | wx.TAB_TRAVERSAL):
-        wx.Panel.__init__(self, parent, id, pos, size, style)
+class NodePropertiesPanel(PanelBase):
+    def __init__(self, parent, idname, menu_item, *args, **kwargs):
+        PanelBase.__init__(self, parent, idname, menu_item)
 
-        self.parent = parent
+        self.thumb_pnl_expanded = False
 
-        self.SetBackgroundColour(const.AREA_BG_COLOR)
+        self.SetBackgroundColour(AREA_BG_COLOR)
 
         self.BuildUI()
 
@@ -47,7 +44,7 @@ class NodePropertiesPanel(wx.Panel):
 
     @property
     def AUIManager(self):
-        return self.parent._mgr
+        return self.parent.mgr
 
     @property
     def Statusbar(self):
@@ -57,15 +54,13 @@ class NodePropertiesPanel(wx.Panel):
         main_sizer = wx.BoxSizer(wx.VERTICAL)
 
         topbar = wx.Panel(self)
-        topbar.SetBackgroundColour(const.AREA_TOPBAR_COLOR)
+        topbar.SetBackgroundColour(AREA_TOPBAR_COLOR)
 
         topbar_sizer = wx.GridBagSizer(vgap=1, hgap=1)
 
         self.area_icon = wx.StaticBitmap(topbar,
                                          bitmap=ICON_NODEPROPERTIES_PANEL.GetBitmap())
-        self.area_label = wx.StaticText(topbar, label="")
-        self.area_label.SetForegroundColour("#fff")
-        self.area_label.SetFont(self.area_label.GetFont().Bold())
+        self.area_label = Label(topbar, label="", color="#ccc", font_bold=True)
 
         self.menu_button = Button(topbar, label="", flat=True,
                                   bmp=(ICON_MORE_MENU_SMALL.GetBitmap(), 'left'))
@@ -89,8 +84,6 @@ class NodePropertiesPanel(wx.Panel):
         self.SetSizer(main_sizer)
 
         self.menu_button.Bind(EVT_BUTTON, self.OnAreaMenuButton)
-        self.Bind(wx.EVT_MENU, self.OnMenuUndockPanel, id=ID_MENU_UNDOCKPANEL)
-        self.Bind(wx.EVT_MENU, self.OnMenuHidePanel, id=ID_MENU_HIDEPANEL)
         self.main_panel.Bind(wx.EVT_ENTER_WINDOW, self.OnAreaFocus)
 
     def UpdatePanelContents(self, selected_node):
@@ -100,21 +93,19 @@ class NodePropertiesPanel(wx.Panel):
 
             # Node info
             nodeinfo_pnl = wx.Panel(self.main_panel, size=(-1, 50))
-            nodeinfo_pnl.SetBackgroundColour(const.AREA_BG_COLOR)
+            nodeinfo_pnl.SetBackgroundColour(AREA_BG_COLOR)
 
             nodeinfo_pnl_sizer = wx.GridBagSizer(vgap=1, hgap=1)
 
-            node_label = wx.StaticText(nodeinfo_pnl, label=selected_node.GetLabel())
-            node_label.SetForegroundColour("#fff")
-            node_label.SetFont(self.area_label.GetFont().Bold())
+            node_label = Label(nodeinfo_pnl, label=selected_node.GetLabel())
 
             self.help_button = Button(nodeinfo_pnl, label="", flat=True,
                                       bmp=(ICON_HELP.GetBitmap(), 'left'))
 
             nodeinfo_pnl_sizer.Add(node_label, (0, 1),
-                                   flag=wx.TOP | wx.BOTTOM, border=6)
+                                   flag=wx.TOP | wx.BOTTOM, border=10)
             nodeinfo_pnl_sizer.Add(self.help_button, (0, 4),
-                                   flag=wx.TOP | wx.BOTTOM | wx.RIGHT, border=6)
+                                   flag=wx.TOP | wx.BOTTOM | wx.RIGHT, border=10)
             nodeinfo_pnl_sizer.AddGrowableCol(2)
             nodeinfo_pnl.SetSizer(nodeinfo_pnl_sizer)
 
@@ -124,17 +115,18 @@ class NodePropertiesPanel(wx.Panel):
             panel_bar = fpb.FoldPanelBar(self.main_panel, agwStyle=fpb.FPB_VERTICAL)
 
             selected_node.NodePanelUI(self.main_panel, panel_bar)
+            self.CreateThumbPanel(selected_node, self.main_panel, panel_bar)
 
             style = fpb.CaptionBarStyle()
             style.SetCaptionFont(self.Parent.GetFont())
-            style.SetCaptionColour(wx.Colour("#fff"))
-            style.SetFirstColour(wx.Colour('#5c5c5c'))
-            style.SetSecondColour(wx.Colour('#5c5c5c'))
+            style.SetCaptionColour(wx.Colour(TEXT_COLOR))
+            style.SetFirstColour(wx.Colour(PROP_BG_COLOR))
+            style.SetCaptionStyle(fpb.CAPTIONBAR_SINGLE)
             panel_bar.ApplyCaptionStyleAll(style)
 
-            self._mainsizer.Add(panel_bar, 1, wx.EXPAND | wx.ALL)
+            self._mainsizer.Add(panel_bar, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, border=6)
 
-            self._mainsizer.Layout()
+            self.help_button.Bind(EVT_BUTTON, self.OnHelpButton)
 
             # Also bind the focus handler to the main panel and panel_bar
             nodeinfo_pnl.Bind(wx.EVT_ENTER_WINDOW, self.OnAreaFocus)
@@ -145,8 +137,6 @@ class NodePropertiesPanel(wx.Panel):
             self._mainsizer.Clear(delete_windows=True)
 
         self.AUIManager.Update()
-        self.Parent.Refresh()
-        self.Parent.Update()
 
     def OnAreaFocus(self, event):
         self.Statusbar.PushContextHints(2, mouseicon=ICON_MOUSE_LMB, text="",
@@ -156,30 +146,12 @@ class NodePropertiesPanel(wx.Panel):
         self.Statusbar.PushMessage(_("Node Properties Area"))
         self.Statusbar.UpdateStatusBar()
 
-    def OnAreaMenuButton(self, event):
-        self.CreateAreaMenu()
-        pos = ComputeMenuPosAlignedLeft(self.area_dropdownmenu, self.menu_button)
-        self.area_dropdownmenu.Popup(pos, self)
+    def OnHelpButton(self, event):
+        ShowNotImplementedDialog()
 
-    def OnMenuUndockPanel(self, event):
-        self.AUIManager.GetPane("nodeproperties").Float()
-        self.AUIManager.Update()
-
-    def OnMenuHidePanel(self, event):
-        self.AUIManager.GetPane("nodeproperties").Hide()
-        self.AUIManager.Update()
-
-    def CreateAreaMenu(self):
-        self.area_dropdownmenu = flatmenu.FlatMenu()
-
-        undockpanel_menuitem = flatmenu.FlatMenuItem(self.area_dropdownmenu,
-                                                     ID_MENU_UNDOCKPANEL,
-                                                     _("Undock panel"), "",
-                                                     wx.ITEM_NORMAL)
-        self.area_dropdownmenu.AppendItem(undockpanel_menuitem)
-
-        hidepanel_menuitem = flatmenu.FlatMenuItem(self.area_dropdownmenu,
-                                                   ID_MENU_HIDEPANEL,
-                                                   _("Hide panel"), "",
-                                                   wx.ITEM_NORMAL)
-        self.area_dropdownmenu.AppendItem(hidepanel_menuitem)
+    def CreateThumbPanel(self, node, panel, panel_bar):
+        # Create the default Thumbnail panel
+        prop = ThumbProp(idname="Thumbnail", default=None, fpb_label="Node Thumbnail",
+                         thumb_img=node.thumbnail)
+        prop.CreateUI(panel, panel_bar)
+        
