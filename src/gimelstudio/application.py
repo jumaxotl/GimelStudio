@@ -1,5 +1,5 @@
 # ----------------------------------------------------------------------------
-# Gimel Studio Copyright 2019-2022 by Noah Rahm and contributors
+# Gimel Studio Copyright 2019-2022 by the Gimel Studio project contributors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -154,15 +154,15 @@ class ApplicationFrame(wx.Frame):
             normalBmp=ICON_COPY.GetBitmap()
         )
 
-        self.preferences_menuitem = flatmenu.FlatMenuItem(
-            edit_menu,
-            id=wx.ID_ANY,
-            label=_("Preferences"),
-            helpString=_("Edit preferences for Gimel Studio"),
-            kind=wx.ITEM_NORMAL,
-            subMenu=None,
-            normalBmp=ICON_SETTINGS.GetBitmap()
-        )
+        # self.preferences_menuitem = flatmenu.FlatMenuItem(
+        #     edit_menu,
+        #     id=wx.ID_ANY,
+        #     label=_("Preferences"),
+        #     helpString=_("Edit preferences for Gimel Studio"),
+        #     kind=wx.ITEM_NORMAL,
+        #     subMenu=None,
+        #     normalBmp=ICON_SETTINGS.GetBitmap()
+        # )
 
         # View
         self.showimageviewport_menuitem = flatmenu.FlatMenuItem(
@@ -278,8 +278,8 @@ class ApplicationFrame(wx.Frame):
         file_menu.AppendItem(self.quit_menuitem)
 
         edit_menu.AppendItem(self.copytoclipboard_menuitem)
-        edit_menu.AppendItem(separator)
-        edit_menu.AppendItem(self.preferences_menuitem)
+        #edit_menu.AppendItem(separator)
+        #edit_menu.AppendItem(self.preferences_menuitem)
 
         view_menu.AppendItem(self.showimageviewport_menuitem)
         # view_menu.AppendItem(self.showstatusbar_menuitem)
@@ -333,9 +333,9 @@ class ApplicationFrame(wx.Frame):
         self.Bind(flatmenu.EVT_FLAT_MENU_SELECTED,
                   self.OnCopyImageToClipboard,
                   self.copytoclipboard_menuitem)
-        self.Bind(flatmenu.EVT_FLAT_MENU_SELECTED,
-                  self.OnPreferencesDialog,
-                  self.preferences_menuitem)
+        # self.Bind(flatmenu.EVT_FLAT_MENU_SELECTED,
+        #           self.OnPreferencesDialog,
+        #           self.preferences_menuitem)
 
         self.Bind(flatmenu.EVT_FLAT_MENU_SELECTED,
                   self.OnToggleImageViewport,
@@ -409,18 +409,6 @@ class ApplicationFrame(wx.Frame):
                           .CloseButton(visible=False)
                           .BestSize(360, 500))
 
-        self.imageviewport_pnl = ImageViewportPanel(self,
-                                                    idname="IMAGE_VIEWPORT",
-                                                    menu_item=self.showimageviewport_menuitem)
-        self.mgr.AddPane(self.imageviewport_pnl,
-                          aui.AuiPaneInfo()
-                          .Name("IMAGE_VIEWPORT")
-                          .CaptionVisible(False)
-                          .Bottom()
-                          .MinSize((-1, 340))
-                          .CloseButton(visible=False)
-                          .BestSize((500, 1700)))
-
         self.nodegraph_pnl = NodeGraphPanel(self, registry=self.registry, size=(100, 100))
         self.nodegraph_pnl.SetDropTarget(NodeGraphDropTarget(self.nodegraph_pnl))
         self.mgr.AddPane(self.nodegraph_pnl,
@@ -430,6 +418,18 @@ class ApplicationFrame(wx.Frame):
                           .CenterPane()
                           .CloseButton(visible=False)
                           .BestSize(500, 300))
+
+        self.imageviewport_pnl = ImageViewportPanel(self,
+                                                    idname="IMAGE_VIEWPORT",
+                                                    menu_item=self.showimageviewport_menuitem)
+        self.mgr.AddPane(self.imageviewport_pnl,
+                          aui.AuiPaneInfo()
+                          .Name("IMAGE_VIEWPORT")
+                          .CaptionVisible(False)
+                          .Top()
+                          .MinSize((-1, 400))
+                          .CloseButton(visible=False)
+                          .BestSize((500, 1700)))
 
         # Get the default proportions correct
         self.mgr.GetPane("PROPERTIES_PNL").dock_proportion = 5
@@ -448,7 +448,7 @@ class ApplicationFrame(wx.Frame):
 
     def Render(self):
         image = self.renderer.Render()
-        render = image.Image("numpy")
+        render = image.GetImage()
         self.imageviewport_pnl.UpdateViewerImage(render, 0)
         self.SetAppTitle(False)
         return render
@@ -511,7 +511,7 @@ class ApplicationFrame(wx.Frame):
         image = self.renderer.GetRender()
 
         try:
-            export_handler = ExportImageHandler(self, image.Image("numpy"))
+            export_handler = ExportImageHandler(self, image.GetImage())
             export_handler.RunExport()
         except AttributeError:
             dlg = wx.MessageDialog(None,
@@ -543,7 +543,7 @@ class ApplicationFrame(wx.Frame):
         if wx.TheClipboard.Open():
             try:
                 image = self.renderer.GetRender()
-                image = image.Image("numpy")
+                image = image.GetImage()
                 image = ConvertImageToWx(image)
                 image = wx.BitmapDataObject(image)
                 wx.TheClipboard.SetData(image)

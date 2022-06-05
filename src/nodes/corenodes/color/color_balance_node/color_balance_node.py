@@ -14,22 +14,21 @@
 # limitations under the License.
 # ----------------------------------------------------------------------------
 
-import numpy as np
 from gimelstudio import api
 
 
-class FlipNode(api.Node):
+class ColorBalanceNode(api.Node):
     def __init__(self, nodegraph, id):
         api.Node.__init__(self, nodegraph, id)
 
     @property
     def NodeMeta(self):
         meta_info = {
-            "label": "Flip",
+            "label": "Color Balance",
             "author": "Gimel Studio",
             "version": (0, 5, 0),
-            "category": "TRANSFORM",
-            "description": "Flips the orientation of the image.",
+            "category": "FILTER",
+            "description": "Adjust the colors of an image.",
         }
         return meta_info
 
@@ -37,14 +36,34 @@ class FlipNode(api.Node):
         image = api.ImageProp(
             idname="in_image",
         )
-        flip_direction = api.ChoiceProp(
-            idname="direction",
-            default="Vertically",
-            choices=["Vertically", "Horizontally", "Diagonally"],
-            fpb_label="Orientation"
+        red_value = api.IntegerProp(
+            idname="red",
+            default=100,
+            min_val=-100,
+            max_val=100,
+            show_p=True,
+            fpb_label="Red"
+        )
+        green_value = api.IntegerProp(
+            idname="green",
+            default=100,
+            min_val=-100,
+            max_val=100,
+            show_p=True,
+            fpb_label="Green"
+        )
+        blue_value = api.IntegerProp(
+            idname="blue",
+            default=100,
+            min_val=-100,
+            max_val=100,
+            show_p=True,
+            fpb_label="Blue"
         )
         self.NodeAddProp(image)
-        self.NodeAddProp(flip_direction)
+        self.NodeAddProp(red_value)
+        self.NodeAddProp(green_value)
+        self.NodeAddProp(blue_value)
 
     def NodeInitOutputs(self):
         self.outputs = {
@@ -55,24 +74,31 @@ class FlipNode(api.Node):
         return self.EvalMutedNode(eval_info)
 
     def NodeEvaluation(self, eval_info):
-        flip_direction = self.EvalProperty(eval_info, "direction")
         image1 = self.EvalProperty(eval_info, "in_image")
+        red_value = self.EvalProperty(eval_info, "red")
+        green_value = self.EvalProperty(eval_info, "green")
+        blue_value = self.EvalProperty(eval_info, "blue")
 
         render_image = api.Image()
-        img = image1.GetImage()
+        
+        # Make correction for slider range
+        red_value = (red_value * 0.1)
+        green_value = (green_value * 0.1)
+        blue_value = (blue_value * 0.1)
 
-        if flip_direction == "Vertically":
-            output_img = np.flipud(img)
-        elif flip_direction == "Horizontally":
-            output_img = np.fliplr(img)
-        elif flip_direction == "Diagonally":
-            output_img = np.flipud(np.fliplr(img))
+        props = {
+            "red": red_value,
+            "green": green_value,
+            "blue": blue_value
+        }
+        shader_src = "nodes/corenodes/color/color_balance_node/color_balance.glsl"
+        result = self.RenderGLSL(shader_src, props, image1)
 
-        render_image.SetAsImage(output_img)
+        render_image.SetAsImage(result)
         self.NodeUpdateThumb(render_image)
         return {
             "image": render_image
         }
 
 
-api.RegisterNode(FlipNode, "corenode_flip")
+api.RegisterNode(ColorBalanceNode, "corenode_colorbalance")

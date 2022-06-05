@@ -1,5 +1,5 @@
 # ----------------------------------------------------------------------------
-# Gimel Studio Copyright 2019-2022 by Noah Rahm and contributors
+# Gimel Studio Copyright 2019-2022 by the Gimel Studio project contributors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -41,17 +41,18 @@ class OutputNode(api.Node):
         return meta_info
 
     def NodeInitProps(self):
-        self.export_button = api.ActionProp(
+        export_button = api.ActionProp(
             idname="export",
             fpb_label="Export",
             btn_label="Export Image",
-            action=self.OnExportButtonPressed
+            action=self.OnExportButtonPressed,
+            can_be_exposed=False
         )
-        self.NodeAddProp(self.export_button)
-
-    def NodeInitParams(self):
-        p = api.RenderImageParam('image', 'Image')
-        self.NodeAddParam(p)
+        image = api.ImageProp(
+            idname="image",
+        )
+        self.NodeAddProp(export_button)
+        self.NodeAddProp(image)
 
     def NodeEvaluation(self, eval_info):
         pass
@@ -61,7 +62,7 @@ class OutputNode(api.Node):
         app_frame = self.nodegraph.parent.parent
         image = app_frame.renderer.GetRender()
         try:
-            export_handler = ExportImageHandler(app_frame, image.Image("numpy"))
+            export_handler = ExportImageHandler(app_frame, image.GetImage())
             export_handler.RunExport()
         except AttributeError:
             dlg = wx.MessageDialog(None,

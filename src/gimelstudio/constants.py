@@ -1,5 +1,5 @@
 # ----------------------------------------------------------------------------
-# Gimel Studio Copyright 2019-2022 by Noah Rahm and contributors
+# Gimel Studio Copyright 2019-2022 by the Gimel Studio project contributors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -28,14 +28,13 @@ APP_VERSION_TAG = " pre-alpha 3"
 APP_VERSION_FULL = "{0}{1}".format(APP_VERSION, APP_VERSION_TAG)
 
 APP_NAME = "Gimel Studio"
-APP_DESCRIPTION = "Non-destructive, node-based 2D image graphics editor focused on simplicity, speed, elegance and usability"
-APP_COPYRIGHT = "© 2019–2022 Noah Rahm and contributors"
+APP_DESCRIPTION = "Non-destructive, node-based 2D image graphics editor focused on simplicity, speed, elegance & usability"
+APP_COPYRIGHT = "© 2019–2022 Gimel Studio contributors"
 
 APP_WEBSITE_URL = "https://gimelstudio.github.io"
 APP_LICENSE_URL = "https://github.com/GimelStudio/GimelStudio/blob/master/LICENSE"
 APP_GITHUB_URL = "https://github.com/GimelStudio/GimelStudio"
 APP_CREDITS_URL = "https://github.com/GimelStudio/GimelStudio/graphs/contributors"
-APP_DISCORD_URL = "https://discord.gg/Rqw-bDr-VDpK"  # Remove dashes when using this
 APP_YOUTUBE_URL = "https://www.youtube.com/channel/UCP9CNtBPMPRwOR4jUiMMkhQ"
 
 APP_FULL_TITLE = "{0} v{1}".format(APP_NAME, APP_VERSION_FULL)
@@ -85,18 +84,18 @@ SUPPORTED_FT_SAVE_WILDCARD = \
     "TIFF file (*.tiff)|*.tiff|" \
     "All files (*.*)|*.*"
 
-PROJECT_FILE_WILDCARD = "GIMEL file (*.gimel)|*.gimel"
+PROJECT_FILE_WILDCARD = "GIMEL project file (*.gimel)|*.gimel"
 
 # Colors
-AREA_BG_COLOR = "#242528"
-AREA_TOPBAR_COLOR = "#3f4146"
+AREA_BG_COLOR = "#1E2429"
+AREA_TOPBAR_COLOR = "#20272C"
 
-PROP_HEADER_COLOR = "#3f4146"
-PROP_BG_COLOR = "#36383c"
+PROP_HEADER_COLOR = "#22292D"
+PROP_BG_COLOR = "#272E35"
 
-ACCENT_COLOR = "#5173b5"
-DARK_COLOR = "#1b1c1e"
+ACCENT_COLOR = "#3D7DC5"
+DARK_COLOR = "#121719"
 
 TEXT_COLOR = "#dfdfdf"
 
-ADD_NODE_MENU_BG = "#121314"
+ADD_NODE_MENU_BG = "#121719"

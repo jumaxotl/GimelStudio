@@ -1,5 +1,5 @@
 # ----------------------------------------------------------------------------
-# Gimel Studio Copyright 2019-2022 by Noah Rahm and contributors
+# Gimel Studio Copyright 2019-2022 by the Gimel Studio project contributors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,24 +20,25 @@ from gsnodegraph import NodeBase as NodeView
 
 import gimelstudio.constants as const
 from gimelstudio.utils import ResizeKeepAspectRatio, ConvertImageToWx
-from gimelstudio.core import EvalInfo, RenderImage
+from gimelstudio.core import EvalInfo, Image
 
 
 class Node(NodeView):
-    def __init__(self, nodegraph, _id):
-        NodeView.__init__(self, nodegraph, _id)
+    def __init__(self, nodegraph, id):
+        NodeView.__init__(self, nodegraph, id)
         self.nodegraph = nodegraph
-        self.id = _id
+        self.id = id
         self.properties = {}
-        self.parameters = {}
+        self.outputs = {}
+
         self.cache = {}
-        self.cache_enabled = True
+        self.cache_enabled = False
         self.edited_flag = False
         self.shader_cache = None
         self.shader_cache_enabled = True
 
         self.NodeInitProps()
-        self.NodeInitParams()
+        self.NodeInitOutputs()
 
     def _WidgetEventHook(self, idname, value, render):
         """ Internal dispatcher method for the Property widget
@@ -88,23 +89,27 @@ class Node(NodeView):
         return self.cache_enabled
 
     def AddProperty(self, prop):
-        self.properties[prop.IdName] = prop
+        self.properties[prop.idname] = prop
         return self.properties
-
-    def AddParameter(self, param):
-        self.parameters[param.IdName] = param
-        return self.parameters
 
     def EditProperty(self, idname, value, render=True):
         prop = self.properties[idname]
         prop.SetValue(value, render)
         return prop
 
-    def EditParameter(self, idname, value):
-        param = self.parameters[idname]
-        param.SetBinding(value)
-        self.RemoveFromCache(idname)
-        return param
+    # def EditParameter(self, idname, value):
+    #     #param = self.properties[idname]
+    #     #param.binding = value
+    #     param = self.parameters[idname]
+    #     param.SetBinding(value)
+    #     #self.RemoveFromCache(idname)
+    #     return param
+
+    def EditConnection(self, name, binding, socket):
+        print("[DEBUG] Make connection: ", binding, socket)
+        if binding is not None:
+            binding = (binding, socket)
+        self.properties[name].binding = binding
 
     def SetEditedFlag(self, edited=True):
         self.edited_flag = edited
@@ -122,14 +127,7 @@ class Node(NodeView):
         """
         pass
 
-    def NodeInitParams(self):
-        """ Define node parameters for the node. These will translate into node sockets on the node itself.
-
-        Subclasses of the ``Parameter`` object such as ``RenderImageParam`` are to be added with the ``NodeAddParam`` method.
-
-        >>> p = api.RenderImageParam('Image')
-        >>> self.NodeAddParam(p)
-        """
+    def NodeInitOutputs(self):
         pass
 
     def NodeAddProp(self, prop):
@@ -140,14 +138,6 @@ class Node(NodeView):
         """
         prop.SetWidgetEventHook(self._WidgetEventHook)
         return self.AddProperty(prop)
-
-    def NodeAddParam(self, param):
-        """ Add a parameter to this node.
-
-        :param prop: instance of ``Parameter`` parameter class
-        :returns: dictionary of the current parameter
-        """
-        return self.AddParameter(param)
 
     def NodeEditProp(self, idname, value, render=True):
         """ Edit a property of this node.
@@ -169,7 +159,7 @@ class Node(NodeView):
 
     def NodeUpdateThumb(self, image):
         if self.IsExpanded():
-            image = image.Image("numpy")
+            image = image.GetImage()
             img = ResizeKeepAspectRatio(image, (134, image.shape[1]))
             self.SetThumbnail(ConvertImageToWx(img))
             self.nodegraph.UpdateNodeGraph()
@@ -208,7 +198,7 @@ class Node(NodeView):
         except KeyError:
             return False
 
-    def EvalParameter(self, eval_info, name):
+    def EvalProperty(self, eval_info, name):
         cached = self.IsInCache(name)
 
         # Basic node cache implementation
@@ -216,19 +206,16 @@ class Node(NodeView):
             if self.GetEditedFlag() == True and cached == True:
                 value = self.cache[name]
                 self.SetEditedFlag(False)
-                # print("Used Cache: ", self._label)
+                # print("Used Cache: ", name)
             else:
-                value = eval_info.EvaluateParameter(name)
+                value = eval_info.EvaluateProperty(name)
                 self.cache[name] = value
                 self.SetEditedFlag(False)
-                # print("Evaluated: ", self._label)
+                # print("Evaluated: ", name)
         else:
-            value = eval_info.EvaluateParameter(name)
+            value = eval_info.EvaluateProperty(name)
 
         return value
-
-    def EvalProperty(self, eval_info, name):
-        return eval_info.EvaluateProperty(name)
 
     @property
     def EvaluateNode(self):
@@ -236,16 +223,20 @@ class Node(NodeView):
         if self.IsMuted():
             return self.MutedNodeEvaluation
         return self.NodeEvaluation
-
+ 
     def EvalMutedNode(self, eval_info):
         try:
-            image = self.EvalParameter(eval_info, "image").Image("numpy")
+            image = self.EvalProperty(eval_info, "in_image").GetImage()
         except:
-            image = self.EvalParameter(eval_info, "image_1").Image("numpy")
-        render_image = RenderImage()
+            image = self.EvalProperty(eval_info, "in_image_2").GetImage()
+        render_image = Image()
         render_image.SetAsImage(image)
         self.NodeUpdateThumb(render_image)
-        return render_image
+        
+        # TODO: support multi-outputs
+        return {
+            "image": render_image
+        }
 
     def RenderGLSL(self, path, props, image, image2=None):
         if self.shader_cache_enabled == True:

@@ -1,5 +1,5 @@
 # ----------------------------------------------------------------------------
-# Gimel Studio Copyright 2019-2022 by Noah Rahm and contributors
+# Gimel Studio Copyright 2019-2022 by the Gimel Studio project contributors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,16 +24,11 @@ class EvalInfo(object):
             raise TypeError
         self.node = node
 
-    def EvaluateParameter(self, name):
-        """ Evaluates the value of a parameter. """
-        param = self.node.parameters[name]
-        if param.binding:
-            # Evaluate the next node
-            info = EvalInfo(param.binding)
-            return param.binding.EvaluateNode(info)
-        return param.value
-
     def EvaluateProperty(self, name):
-        """ Evaluates the value of a property. """
         prop = self.node.properties[name]
+        if prop.binding:
+            # Evaluate the next node
+            binding = prop.binding
+            info = EvalInfo(binding[0])
+            return binding[0].EvaluateNode(info)[binding[1]]
         return prop.value

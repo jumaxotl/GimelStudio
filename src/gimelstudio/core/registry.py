@@ -1,5 +1,5 @@
 # ----------------------------------------------------------------------------
-# Gimel Studio Copyright 2019-2022 by Noah Rahm and contributors
+# Gimel Studio Copyright 2019-2022 by the Gimel Studio project contributors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 from gimelstudio.utils import NodeExistsError, NodeNotFoundError
 
 # The node registry is simply a python dictionary holding all of the available
-# nodes in this application session. To be registered means that is is usable in
+# nodes in this application session. To be registered means that is is use-able in
 # the application (i.e can be used in the nodegraph).
 NODE_REGISTRY = {}
 

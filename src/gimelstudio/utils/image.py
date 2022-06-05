@@ -1,5 +1,5 @@
 # ----------------------------------------------------------------------------
-# Gimel Studio Copyright 2019-2022 by Noah Rahm and contributors
+# Gimel Studio Copyright 2019-2022 by the Gimel Studio project contributors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,8 +22,8 @@ import numpy as np
 
 def ConvertImageToWx(cv2_image):
     height, width = cv2_image.shape[:2]
-    cv2_image_rgb = cv2.cvtColor(cv2_image.astype(np.uint8), cv2.COLOR_RGB2RGBA)
-    return wx.Bitmap.FromBufferRGBA(width, height, cv2_image_rgb)
+    cv2_image_rgb = cv2.normalize(src=cv2_image, dst=None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
+    return wx.Bitmap.FromBufferRGBA(width, height, cv2_image_rgb.astype(np.uint8))
 
 
 def ResizeKeepAspectRatio(image, size):

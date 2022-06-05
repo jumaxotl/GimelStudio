@@ -1,5 +1,5 @@
 # ----------------------------------------------------------------------------
-# Gimel Studio Copyright 2019-2022 by Noah Rahm and contributors
+# Gimel Studio Copyright 2019-2022 by the Gimel Studio project contributors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,7 +22,8 @@ from gsnodegraph import (EVT_GSNODEGRAPH_NODESELECT,
                          EVT_GSNODEGRAPH_NODEDISCONNECT,
                          EVT_GSNODEGRAPH_MOUSEZOOM,
                          EVT_GSNODEGRAPH_ADDNODEBTN)
-from gsnodegraph import NodeGraph as NodeGraphBase
+from gsnodegraph import NodeGraphBase
+from gsnodegraph.constants import SOCKET_OUTPUT
 
 import gimelstudio.constants as const
 from gimelstudio.datafiles import (ICON_NODEGRAPH_PANEL, ICON_MOUSE_LMB_MOVEMENT, 
@@ -34,8 +35,8 @@ ID_ADDNODEMENU = wx.NewIdRef()
 
 
 class NodeGraph(NodeGraphBase):
-    def __init__(self, parent, registry, *args, **kwds):
-        NodeGraphBase.__init__(self, parent, registry, *args, **kwds)
+    def __init__(self, parent, registry, config, *args, **kwds):
+        NodeGraphBase.__init__(self, parent, registry, config, *args, **kwds)
 
     @property
     def GLSLRenderer(self):
@@ -77,17 +78,54 @@ class NodeGraphPanel(wx.Panel):
 
         topbar.SetSizer(topbar_sizer)
 
-        self.nodegraph = NodeGraph(self, self.registry, size=(-1, self.Size[0]-20))
+        # Setup the config with datatypes and node categories
+        config = {
+            "image_datatype": "IMAGE",
+            "node_datatypes": {
+                "IMAGE": "#C6C62D",  # Yellow
+                "INTEGER": "#A0A0A0",  # Grey
+                "FLOAT": "#A0A0A0",  # Grey
+                "STRING": "#2DBCC6", # Blue
+                "COLOR": "#D98B3D", # Orange
+                "VECTOR": "#6E3DD9", # Purple
+                "VALUE": "#A0A0A0",  # Depreciated!
+            },
+            "input_nodes_categories": ["INPUT"],
+            "node_categories": {
+                "INPUT": "#E64555",  # Burgendy
+                "DRAW": "#AF4467",  # Pink
+                "MASK": "#084D4D",  # Blue-green
+                "CONVERT": "#564B7C",  # Purple
+                "FILTER": "#558333",  # Green
+                "BLEND": "#498DB8",  # Light blue
+                "COLOR": "#C2AF3A",  # Yellow
+                "TRANSFORM": "#6B8B8B", # Blue-grey
+                "OUTPUT": "#B33641"  # Red
+            }
+        }
 
-        # Here for testing
-        if const.APP_FROZEN is False:
-            self.nodegraph.AddNode('corenode_blur', pos=wx.Point(600, 200))
-            self.nodegraph.AddNode('corenode_opacity', pos=wx.Point(310, 200))
-            self.nodegraph.AddNode('corenode_flip', pos=wx.Point(500, 300))
+        self.nodegraph = NodeGraph(self, registry=self.registry, 
+                                   config=config,
+                                   size=(-1, self.Size[0]-20))
 
         # Add default image and output node
-        self.nodegraph.AddNode('corenode_image', pos=wx.Point(100, 250))
-        self.nodegraph.AddNode('corenode_outputcomposite', pos=wx.Point(950, 250))
+        image_node = self.nodegraph.AddNode('corenode_image', pos=wx.Point(150, 150))
+        image_node.ToggleExpand()
+        output_node = self.nodegraph.AddNode('corenode_outputcomposite', pos=wx.Point(1200, 250))
+
+        # For testing during development
+        if const.APP_FROZEN is False:
+            self.nodegraph.AddNode('corenode_blur', pos=wx.Point(400, 200))
+            self.nodegraph.AddNode('corenode_opacity', pos=wx.Point(650, 200))
+            self.nodegraph.AddNode('corenode_flip', pos=wx.Point(900, 200))
+
+        # Connect the nodes by default
+        for socket in image_node.GetSockets():
+            # We're assuming there is only one output
+            if socket.direction == SOCKET_OUTPUT:
+                src_socket = socket
+        dst_socket = output_node.GetSockets()[0]
+        self.nodegraph.ConnectNodes(src_socket, dst_socket)
 
         main_sizer.Add(topbar, flag=wx.EXPAND | wx.LEFT | wx.RIGHT)
         main_sizer.Add(self.nodegraph, 1, flag=wx.EXPAND | wx.BOTH)
@@ -99,7 +137,6 @@ class NodeGraphPanel(wx.Panel):
         self.nodegraph.Bind(EVT_GSNODEGRAPH_NODEDISCONNECT, self.NodeDisconnectEvent)
         self.nodegraph.Bind(EVT_GSNODEGRAPH_MOUSEZOOM, self.ZoomNodeGraph)
         self.nodegraph.Bind(EVT_GSNODEGRAPH_ADDNODEBTN, self.OnAddNodeMenuButton)
-        self.nodegraph.Bind(wx.EVT_ENTER_WINDOW, self.OnAreaFocus)
         self.zoom_field.Bind(EVT_NUMBERFIELD_CHANGE, self.ChangeZoom)
         self.parent.Bind(wx.EVT_MENU, self.OnAddNodeMenu, id=ID_ADDNODEMENU)
 
@@ -123,10 +160,6 @@ class NodeGraphPanel(wx.Panel):
     @property
     def GLSLRenderer(self):
         return self.parent.glsl_renderer
-
-    @property
-    def Statusbar(self):
-        return self.parent.statusbar
 
     @property
     def ImageViewport(self):
@@ -165,22 +198,6 @@ class NodeGraphPanel(wx.Panel):
         self.addnodemenu.SetSize(250, 400)
         if self.addnodemenu.IsShown() is not True:
             self.addnodemenu.Show()
-
-
-    def OnAreaFocus(self, event):
-        self.Statusbar.PushContextHints(2, mouseicon=ICON_MOUSE_LMB_MOVEMENT,
-                                        text=_("Box Select Nodes"), clear=True)
-        self.Statusbar.PushContextHints(3, mouseicon=ICON_MOUSE_LMB,
-                                        text=_("Select Node"))
-        self.Statusbar.PushContextHints(4, mouseicon=ICON_MOUSE_LMB,
-                                        keyicon=ICON_KEY_CTRL,
-                                        text=_("Connect Selected Node To Output"))
-        self.Statusbar.PushContextHints(5, mouseicon=ICON_MOUSE_MMB_MOVEMENT,
-                                        text=_("Pan Node Graph"))
-        self.Statusbar.PushContextHints(6, mouseicon=ICON_MOUSE_RMB,
-                                        text=_("Node Context Menu"))
-        self.Statusbar.PushMessage(_("Node Graph Area"))
-        self.Statusbar.UpdateStatusBar()
 
     def OnAddNodeMenu(self, event):
         pos = wx.GetMousePosition()

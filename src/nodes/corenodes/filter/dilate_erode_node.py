@@ -1,5 +1,5 @@
 # ----------------------------------------------------------------------------
-# Gimel Studio Copyright 2019-2022 by Noah Rahm and contributors
+# Gimel Studio Copyright 2019-2022 by the Gimel Studio project contributors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,8 +20,8 @@ from gimelstudio import api
 
 
 class DilateErodeNode(api.Node):
-    def __init__(self, nodegraph, _id):
-        api.Node.__init__(self, nodegraph, _id)
+    def __init__(self, nodegraph, id):
+        api.Node.__init__(self, nodegraph, id)
 
     @property
     def NodeMeta(self):
@@ -45,6 +45,9 @@ class DilateErodeNode(api.Node):
             self.RefreshPropertyPanel()
 
     def NodeInitProps(self):
+        image = api.ImageProp(
+            idname="in_image",
+        )
         operation = api.ChoiceProp(
             idname="operation",
             default="Erode",
@@ -59,7 +62,7 @@ class DilateErodeNode(api.Node):
             fpb_label="Kernel Shape"
         )
 
-        kernel_size = api.PositiveIntegerProp(
+        kernel_size = api.IntegerProp(
             idname="kernel_size",
             default=5,
             min_val=1,
@@ -67,35 +70,35 @@ class DilateErodeNode(api.Node):
             fpb_label="Kernel Size"
         )
 
-        self.iterations = api.PositiveIntegerProp(
+        self.iterations = api.IntegerProp(
             idname="iterations",
             default=1,
             min_val=1,
             max_val=100,
             fpb_label="Iterations"
         )
-
+        self.NodeAddProp(image)
         self.NodeAddProp(operation)
         self.NodeAddProp(kernel_shape)
         self.NodeAddProp(kernel_size)
         self.NodeAddProp(self.iterations)
 
-    def NodeInitParams(self):
-        image = api.RenderImageParam("image", "Image")
-
-        self.NodeAddParam(image)
+    def NodeInitOutputs(self):
+        self.outputs = {
+            "image": api.Output(idname="image", datatype="IMAGE", label="Image"),
+        }
 
     def MutedNodeEvaluation(self, eval_info):
         return self.EvalMutedNode(eval_info)
 
     def NodeEvaluation(self, eval_info):
-        input_image = self.EvalParameter(eval_info, "image")
+        input_image = self.EvalProperty(eval_info, "in_image")
         operation = self.EvalProperty(eval_info, "operation")
         kernel_shape = self.EvalProperty(eval_info, "kernel_shape")
         kernel_size = self.EvalProperty(eval_info, "kernel_size")
         iterations = self.EvalProperty(eval_info, "iterations")
 
-        image = input_image.Image("numpy")
+        image = input_image.GetImage()
 
         if kernel_shape == "Rectangle":
             kshape = cv2.MORPH_RECT
@@ -119,10 +122,12 @@ class DilateErodeNode(api.Node):
         elif operation == "Black Hat":
             output_image = cv2.morphologyEx(image, cv2.MORPH_BLACKHAT, kernel_image)
 
-        render_image = api.RenderImage()
+        render_image = api.Image()
         render_image.SetAsImage(output_image)
         self.NodeUpdateThumb(render_image)
-        return render_image
+        return {
+            "image": render_image
+        }
 
 
 api.RegisterNode(DilateErodeNode, "corenode_dilate_erode")

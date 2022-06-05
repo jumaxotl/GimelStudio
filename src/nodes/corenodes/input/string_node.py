@@ -1,5 +1,5 @@
 # ----------------------------------------------------------------------------
-# Gimel Studio Copyright 2019-2022 by Noah Rahm and contributors
+# Gimel Studio Copyright 2019-2022 by the Gimel Studio project contributors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,38 +17,41 @@
 from gimelstudio import api
 
 
-class ValueNode(api.Node):
-    def __init__(self, nodegraph, _id):
-        api.Node.__init__(self, nodegraph, _id)
+class StringNode(api.Node):
+    def __init__(self, nodegraph, id):
+        api.Node.__init__(self, nodegraph, id)
 
     @property
     def NodeMeta(self):
         meta_info = {
-            "label": "Value",
+            "label": "String",
             "author": "Gimel Studio",
             "version": (0, 5, 0),
             "category": "INPUT",
-            "description": "Input an integer or float.",
+            "description": "Input a string.",
         }
         return meta_info
 
-    def NodeOutputDatatype(self):
-        return "VALUE"
-
     def NodeInitProps(self):
-        value = api.PositiveIntegerProp(
-            idname="value",
-            default=100,
-            min_val=0,
-            max_val=100,
-            fpb_label="Integer Value"
+        string = api.StringProp(
+            idname="sel_string",
+            default="",
+            fpb_label="String",
+            can_be_exposed=False
         )
-        self.NodeAddProp(value)
+        self.NodeAddProp(string)
+
+    def NodeInitOutputs(self):
+        self.outputs = {
+            "string": api.Output(idname="string", datatype="STRING", label="String"),
+        }
 
     def NodeEvaluation(self, eval_info):
-        value = self.EvalProperty(eval_info, "value")
+        string = self.EvalProperty(eval_info, "sel_string")
 
-        return value
+        return {
+            "string": string
+        }
 
 
-api.RegisterNode(ValueNode, "node_value")
+api.RegisterNode(StringNode, "corenode_string")
