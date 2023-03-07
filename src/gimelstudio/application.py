@@ -1,5 +1,5 @@
 # ----------------------------------------------------------------------------
-# Gimel Studio Copyright 2019-2022 by the Gimel Studio project contributors
+# Gimel Studio Copyright 2019-2023 by the Gimel Studio project contributors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -375,9 +375,9 @@ class ApplicationFrame(wx.Frame):
         self.main_sizer.Add(self.menubar, 0, wx.EXPAND)
 
         # Create the statusbar
-        # self.statusbar = StatusBar(self)
-        # self.SetStatusBar(self.statusbar)
-        # self.statusbar.Hide()
+        self.statusbar = StatusBar(self)
+        #self.SetStatusBar(self.statusbar)
+        self.statusbar.Hide()
 
         # Window manager
         self.mgr = AUIManager(self)

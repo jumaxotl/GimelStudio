@@ -16,42 +16,45 @@
 
 from gimelstudio import api
 
-
-class StringNode(api.Node):
+class FloatNode(api.Node):
     def __init__(self, nodegraph, id):
         api.Node.__init__(self, nodegraph, id)
 
     @property
     def NodeMeta(self):
         meta_info = {
-            "label": "String",
+            "label": "Float",
             "author": "Gimel Studio",
-            "version": (0, 5, 0),
+            "version": (0, 6, 0),
             "category": "INPUT",
-            "description": "Input a string.",
+            "description": "Input a float",
         }
+        
         return meta_info
 
     def NodeInitProps(self):
-        string = api.StringProp(
-            idname="sel_string",
-            default="",
-            fpb_label="String",
+        float_ = api.FloatProp(
+            idname="sel_float",
+            default=1.0,
+            min_val=-100000.0,
+            max_val=100000.0,
+            fpb_label="Float",
             can_be_exposed=False
         )
-        self.NodeAddProp(string)
+
+        self.NodeAddProp(float_)
 
     def NodeInitOutputs(self):
         self.outputs = {
-            "string": api.Output(idname="string", datatype="STRING", label="String"),
+            "float": api.Output(idname="float", datatype="FLOAT", label="Float")
         }
 
-    def NodeEvaluation(self, eval_info):
-        string = self.EvalProperty(eval_info, "sel_string")
+    def NodeEvaluation(self, evel_info):
+        float_ = self.EvalProperty(eval_info, "sel_float")
 
         return {
-            "string": string
+            "float": float_
         }
 
+api.RegisterNode(FloatNode, "node_float")
 
-api.RegisterNode(StringNode, "corenode_string")

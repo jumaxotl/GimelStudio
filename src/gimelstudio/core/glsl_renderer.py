@@ -1,5 +1,5 @@
 # ----------------------------------------------------------------------------
-# Gimel Studio Copyright 2019-2022 by the Gimel Studio project contributors
+# Gimel Studio Copyright 2019-2023 by the Gimel Studio project contributors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -89,7 +89,11 @@ class GLSLRenderer(object):
         if vao is None:
             vertex_shader = """
                 #version 330
+                
                 in vec2 in_position;
+
+                out vec2 tex_coord;
+
                 void main() {
                     gl_Position = vec4(in_position, 0.0, 1.0);
                 }
