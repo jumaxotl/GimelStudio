@@ -12,11 +12,14 @@
 
 # About Gimel Studio
 
+> [!NOTE]
+> 10/30/2023 The Gimel Studio maintainers have decided to place the project on a **temporary hiatus**. Our dedication to Gimel Studio remains and we have some ideas we want to bring to the open-source community. We plan to pick back up on planning, design, and development sometime in 2024. Thanks for your support and understanding. -Noah, on behalf of the Gimel Studio maintainers
+
 This repository tracks the next step of Gimel Studio to become a truly usable and serious non-destructive graphics editor. It is currently in ``initial planning/development`` stage, working towards a usable MVP application. Things will probably change **a lot** from what is currently here.
 
 You’re always welcome to help out, ask questions, give feedback, and suggest ideas/improvements.
 
-**Join us in our Zulip chat organization [here](https://gimelstudio.zulipchat.com/join/sif32f3gjpnikveonzgc7zhw/) to give your feedback and stay in the loop!**
+**Join us in the Zulip chat organization [here](https://gimelstudio.zulipchat.com/join/sif32f3gjpnikveonzgc7zhw/) to give your feedback and stay in the loop!**
 
 
 # Project Vision
@@ -45,10 +48,6 @@ With a fully non-destructive workflow that uses both GPU and CPU processing (via
 
 
 # Current Status
-
-**6/6/22 update:** We're in the process of planning for another step to hopefully propel the project forward with a clearer goals and organization.
-
-**Join us in our Zulip chat organization [here](https://gimelstudio.zulipchat.com/join/sif32f3gjpnikveonzgc7zhw/) to give your feedback and stay in the loop!**
 
 There are [alpha pre-releases](https://github.com/GimelStudio/GimelStudio/releases) available for those wanting to test the current functionality.
 

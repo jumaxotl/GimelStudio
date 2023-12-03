@@ -6,11 +6,15 @@
 #version 330
 
 uniform sampler2D input_img;
-uniform float opacity_value;
+uniform float gamma_value;
 out vec4 output_img;
 
+vec4 gamma(vec4 in_color, float g) {
+    vec4 abs_color = abs(in_color);
+    return vec4(pow(abs_color.r, g), pow(abs_color.g, g), pow(abs_color.b, g), abs_color.a);
+}
+
 void main() {
-    vec4 color = texelFetch(input_img, ivec2(gl_FragCoord.xy), 0);
-    if (color.a > 0) output_img = vec4(color.r, color.g, color.b, opacity_value);
-    else output_img = color;
+    vec4 col = texelFetch(input_img, ivec2(gl_FragCoord.xy), 0);
+    output_img = gamma(col, gamma_value);
 }
